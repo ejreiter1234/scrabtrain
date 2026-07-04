@@ -65,6 +65,8 @@ nav.tabs button.active{background:var(--tile);color:var(--board-dark);}
 .opt-btn .infinity-symbol{display:block;font-size:36px;line-height:1;}
 .opt-btn .lives-hint{font-size:12px !important;}
 
+
+
 .big-btn{
   width:100%;background:var(--accent);color:var(--board-dark);border:none;border-radius:12px;
   padding:16px;font-size:17px;font-weight:700;cursor:pointer;margin-top:6px;
@@ -238,30 +240,20 @@ nav.tabs button.active{background:var(--tile);color:var(--board-dark);}
         <div class="opt-group">
           <label class="group-label">Dictionary</label>
           <div class="opt-row">
-            <div class="opt-btn" data-group="dict" data-val="TWL">TWL<small>North America</small></div>
             <div class="opt-btn selected" data-group="dict" data-val="SOWPODS">SOWPODS<small>International</small></div>
+            <div class="opt-btn" data-group="dict" data-val="TWL">TWL<small>North America</small></div>
           </div>
         </div>
         <div class="opt-group">
           <label class="group-label">Word length</label>
           <div class="opt-row">
-            <div class="opt-btn" data-group="len" data-val="both">Both</div>
             <div class="opt-btn selected" data-group="len" data-val="2">2-letter</div>
             <div class="opt-btn" data-group="len" data-val="3">3-letter</div>
+            <div class="opt-btn" data-group="len" data-val="both">Both</div>
           </div>
         </div>
-        <div class="opt-group">
-          <label class="group-label">Round length</label>
-          <div class="opt-row">
-            <div class="opt-btn" data-group="round" data-val="20">20</div>
-            <div class="opt-btn selected" data-group="round" data-val="50">50</div>
-            <div class="opt-btn" data-group="round" data-val="100">100</div>
-            <div class="opt-btn" data-group="round" data-val="200">200</div>
-            <div class="opt-btn" data-group="round" data-val="infinite"><span class="infinity-symbol">∞</span><small class="lives-hint">3 lives</small></div>
-          </div>
-          <p class="small-note" id="infiniteBestNote" style="display:none;"></p>
-        </div>
-        <button class="big-btn" id="startBtn">Start Round</button>
+        <p class="small-note" id="infiniteBestNote"></p>
+        <button class="big-btn" id="startBtn">Start</button>
       </div>
 
       <div class="card" id="lifetimeStatsCard" style="display:none;">
@@ -576,21 +568,18 @@ function wireOptGroup(container, groupName){
 }
 wireOptGroup(document, 'dict');
 wireOptGroup(document, 'len');
-wireOptGroup(document, 'round');
 
 function highScoreKey(dict, lenMode){ return dict+'_'+lenMode; }
 
 function updateInfiniteBestNote(){
   const note = document.getElementById('infiniteBestNote');
-  if(getSelected('round') !== 'infinite'){ note.style.display='none'; return; }
   const dict = getSelected('dict');
   const lenMode = getSelected('len');
   const best = progress.infiniteHighScores[highScoreKey(dict, lenMode)] || 0;
   const lenLabel = lenMode==='both' ? '2 & 3-letter' : lenMode+'-letter';
   note.textContent = `Your best for ${dict} · ${lenLabel}: ${best} correct`;
-  note.style.display = 'block';
 }
-['dict','len','round'].forEach(g=>{
+['dict','len'].forEach(g=>{
   document.querySelectorAll(`[data-group="${g}"]`).forEach(b=>b.addEventListener('click', updateInfiniteBestNote));
 });
 wireOptGroup(document, 'wldict');
@@ -960,11 +949,7 @@ function finishRound(){
 document.getElementById('startBtn').addEventListener('click', ()=>{
   const dict = getSelected('dict');
   const lenMode = getSelected('len');
-  const roundVal = getSelected('round');
-  const fullCoverage = (roundVal === '200');
-  const infinite = (roundVal === 'infinite');
-  const size = infinite ? 0 : Number(roundVal);
-  startRound(size, dict, lenMode, null, fullCoverage, infinite);
+  startRound(0, dict, lenMode, null, false, true);
 });
 
 document.getElementById('reviewMissedBtn').addEventListener('click', ()=>{
@@ -1066,11 +1051,21 @@ function buildScoreCardCanvas(){
 
   // Footer
   ctx.fillStyle = '#8ba493';
-  ctx.font = '500 15px -apple-system, sans-serif';
-  ctx.fillText(new Date().toLocaleDateString(), W/2, 560);
+  ctx.font = '500 14px -apple-system, sans-serif';
+  ctx.fillText(new Date().toLocaleDateString(), W/2, 545);
+
+  ctx.fillStyle = '#d4a24c';
+  ctx.font = '700 20px -apple-system, sans-serif';
+  ctx.fillText('Play at ' + GAME_URL_DISPLAY, W/2, 575);
 
   return canvas;
 }
+
+// Best guess at this app's live GitHub Pages URL, used in the share card/text
+// so whoever receives it has a way back to the game. Update this if the repo
+// name or username changes.
+const GAME_URL = 'https://ejreiter1234.github.io/scrabtrain/';
+const GAME_URL_DISPLAY = 'ejreiter1234.github.io/scrabtrain';
 
 function dataURLToBlob(dataUrl){
   const [header, base64] = dataUrl.split(',');
@@ -1089,7 +1084,7 @@ function shareScoreCard(){
   // synchronously within the user gesture, or it silently rejects.
   const dataUrl = canvas.toDataURL('image/png');
   const blob = dataURLToBlob(dataUrl);
-  const shareText = `I scored ${document.getElementById('summaryPct').textContent} (${document.getElementById('summaryHeroLabel').textContent}) on Eric's Scrabble Trainer!`;
+  const shareText = `I scored ${document.getElementById('summaryPct').textContent} (${document.getElementById('summaryHeroLabel').textContent}) on Eric's Scrabble Trainer! Play at ${GAME_URL}`;
   const file = new File([blob], 'scrabble-score.png', {type:'image/png'});
 
   if(navigator.canShare && navigator.canShare({files:[file]})){
@@ -1097,7 +1092,7 @@ function shareScoreCard(){
     return;
   }
   if(navigator.share){
-    navigator.share({title:'My Scrabble Score', text: shareText}).catch(()=>{});
+    navigator.share({title:'My Scrabble Score', text: shareText, url: GAME_URL}).catch(()=>{});
     return;
   }
   // Fallback for desktop or unsupported browsers: download the image instead
