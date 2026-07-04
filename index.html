@@ -136,7 +136,8 @@ nav.tabs button.active{background:var(--tile);color:var(--board-dark);}
 
 .next-btn{margin-top:14px;}
 
-.quit-link{text-align:center;margin-top:16px;font-size:12px;color:var(--muted);text-decoration:underline;cursor:pointer;}
+.quit-btn{margin-top:14px;background:rgba(192,83,62,0.18);border:1.5px solid rgba(192,83,62,0.5);color:#f0a08c;box-shadow:none;}
+.quit-btn:active{transform:translateY(2px);}
 
 .played-section{margin-top:18px;}
 .played-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
@@ -296,7 +297,7 @@ nav.tabs button.active{background:var(--tile);color:var(--board-dark);}
         </div>
       </div>
 
-      <div class="quit-link" id="quitLink">End round early</div>
+      <button class="big-btn quit-btn" id="quitLink">Quit &amp; See Score</button>
 
       <div class="played-section">
         <div class="played-header">
@@ -325,6 +326,8 @@ nav.tabs button.active{background:var(--tile);color:var(--board-dark);}
         </div>
       </div>
 
+      <button class="big-btn share" id="shareScoreBtn">📤 Share Score</button>
+
       <div id="livesLostSection" style="display:none;">
         <h3 style="margin:6px 0 10px;font-size:15px;">How you lost your lives</h3>
         <div class="card" id="livesLostList"></div>
@@ -339,7 +342,6 @@ nav.tabs button.active{background:var(--tile);color:var(--board-dark);}
       <h3 style="margin:14px 0 10px;font-size:15px;">Words you missed</h3>
       <div class="card miss-list" id="missList"></div>
 
-      <button class="big-btn share" id="shareScoreBtn">📤 Share Score</button>
       <button class="big-btn" id="practiceMissedBtn">Practice These Again</button>
       <button class="big-btn secondary" id="newRoundBtn">New Round</button>
     </div>
@@ -1064,8 +1066,8 @@ function buildScoreCardCanvas(){
 // Best guess at this app's live GitHub Pages URL, used in the share card/text
 // so whoever receives it has a way back to the game. Update this if the repo
 // name or username changes.
-const GAME_URL = 'https://ejreiter1234.github.io/scrabtrain/';
-const GAME_URL_DISPLAY = 'ejreiter1234.github.io/scrabtrain';
+const GAME_URL = 'https://scrabble.ericr.us/';
+const GAME_URL_DISPLAY = 'scrabble.ericr.us';
 
 function dataURLToBlob(dataUrl){
   const [header, base64] = dataUrl.split(',');
