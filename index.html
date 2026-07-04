@@ -1,4 +1,4 @@
-<!-- v1.10 | Last updated: 2026-07-04 -->
+<!-- v1.12 | Last updated: 2026-07-04 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -137,7 +137,7 @@ nav.tabs button.active{background:var(--tile);color:var(--board-dark);}
 
 .next-btn{margin-top:14px;}
 
-.quit-btn{margin-top:14px;background:rgba(192,83,62,0.18);border:1.5px solid rgba(192,83,62,0.5);color:#f0a08c;box-shadow:none;}
+.quit-btn{margin-top:16px;padding:12px;font-size:14px;background:rgba(192,83,62,0.14);border:1.5px solid rgba(192,83,62,0.4);color:#f0a08c;box-shadow:none;}
 .quit-btn:active{transform:translateY(2px);}
 
 .played-section{margin-top:18px;}
@@ -268,7 +268,7 @@ nav.tabs button.active{background:var(--tile);color:var(--board-dark);}
         <button class="big-btn secondary" id="reviewMissedBtn" style="margin-top:14px;display:none;">Review My Missed Words</button>
       </div>
 
-      <div class="app-version">v1.10</div>
+      <div class="app-version">v1.12</div>
 
     </div>
 
@@ -300,8 +300,6 @@ nav.tabs button.active{background:var(--tile);color:var(--board-dark);}
         </div>
       </div>
 
-      <button class="big-btn quit-btn" id="quitLink">Quit &amp; See Score</button>
-
       <div class="played-section">
         <div class="played-header">
           <h4>Played this round</h4>
@@ -313,6 +311,8 @@ nav.tabs button.active{background:var(--tile);color:var(--board-dark);}
           <div class="played-col" id="playedCol2"></div>
         </div>
       </div>
+
+      <button class="big-btn quit-btn" id="quitLink">Quit</button>
     </div>
 
     <div class="screen" id="screen-summary">
@@ -379,7 +379,7 @@ nav.tabs button.active{background:var(--tile);color:var(--board-dark);}
         <input type="text" class="search-box" id="lookupInput" placeholder="Type any word…" maxlength="20" autocapitalize="characters">
       </div>
       <button class="big-btn" id="lookupBtn" style="margin-top:0;">Check Word</button>
-      <p class="small-note">2–3 letter words are checked exactly against the TWL/SOWPODS lists used in this app. 4+ letter words are checked live against a general English dictionary as a best-effort signal — not official Scrabble validation.</p>
+      <p class="small-note">2–3 letter words are checked exactly against the TWL/SOWPODS lists used in this app. 4+ letter words are checked against ENABLE, a public-domain word-game dictionary (also used as the official Words With Friends dictionary) — a much closer match to Scrabble validity than a general dictionary, though not a byte-identical copy of the current licensed tournament word lists (those are proprietary).</p>
     </div>
 
     <div class="lookup-result" id="lookupResult">
@@ -499,9 +499,15 @@ function generateDecoys(validSet, length){
         if(!validSet.has(cand) && isPlausible(cand)) decoys.add(cand);
       }
     }
-    if(length===2){
+    // Full-word reversal (AR->RA, etc.) — a classic decoy pattern, guaranteed
+    // for 2-letter words specifically (per explicit request). We skip
+    // isPlausible here since a real word's letters swapped is always a
+    // meaningful decoy, even for the rare all-consonant case. 3-letter words
+    // don't get this special treatment — they rely on the mutation-based
+    // decoys above, same as before.
+    if(length === 2){
       const rev = word[1]+word[0];
-      if(!validSet.has(rev) && isPlausible(rev)) decoys.add(rev);
+      if(rev !== word && !validSet.has(rev)) decoys.add(rev);
     }
   }
   return Array.from(decoys);
@@ -1143,15 +1149,32 @@ document.getElementById('wlSearch').addEventListener('input', renderWordList);
    LOOKUP TOOL
    2-3 letter words: checked exactly against our compiled
    TWL/SOWPODS lists.
-   4+ letter words: we don't have a full-length Scrabble
-   dictionary embedded, so we check against a live general
-   English dictionary as a best-effort signal and label it
-   clearly as such (it isn't official Scrabble validation —
-   e.g. it can miss valid Scrabble-only words and won't
-   filter out proper-noun-like entries the way TWL/SOWPODS
-   would).
+   4+ letter words: checked against ENABLE (Enhanced North
+   American Benchmark Lexicon) — a public-domain word list
+   built specifically for word games (it's the same list
+   Zynga used as the official Words With Friends dictionary).
+   It's a much closer match to Scrabble-style validity than
+   a general English dictionary — no proper nouns, includes
+   game-legal short words, etc. It's still not a byte-for-
+   byte copy of the current licensed NASPA/Collins tournament
+   lists (those are proprietary and members-only), so it's
+   labeled honestly as ENABLE rather than "official."
 ===================================================== */
 let lookupHistory = [];
+let enableWordSet = null;
+let enableLoadPromise = null;
+
+function loadEnableWordList(){
+  if(enableWordSet) return Promise.resolve(enableWordSet);
+  if(enableLoadPromise) return enableLoadPromise;
+  enableLoadPromise = fetch('https://raw.githubusercontent.com/rressler/data_raw_courses/main/enable1_words.txt')
+    .then(res => res.text())
+    .then(text => {
+      enableWordSet = new Set(text.split('\n').map(w => w.trim().toUpperCase()).filter(Boolean));
+      return enableWordSet;
+    });
+  return enableLoadPromise;
+}
 
 async function doLookup(){
   const dict = getSelected('lkdict');
@@ -1173,23 +1196,22 @@ async function doLookup(){
     return;
   }
 
-  // 4+ letters (or 1 letter): no local Scrabble list for this length, so do a
-  // best-effort live dictionary check.
+  // 4+ letters (or 1 letter): check against the ENABLE word-game list
   resEl.className = 'lookup-result show';
   verdict.textContent = 'Checking…';
   verdict.className = 'verdict';
   dictInfo.textContent = '';
   try{
-    const res = await fetch('https://api.dictionaryapi.dev/api/v2/entries/en/'+encodeURIComponent(raw.toLowerCase()));
-    const isValid = res.ok;
+    const words = await loadEnableWordList();
+    const isValid = words.has(raw);
     resEl.className = 'lookup-result show ' + (isValid?'yes':'no');
-    verdict.textContent = isValid ? '✓ Found in general English dictionary' : '✕ Not found in general English dictionary';
+    verdict.textContent = isValid ? '✓ Valid word (ENABLE word list)' : '✕ Not found in ENABLE word list';
     verdict.className = 'verdict ' + (isValid?'yes-text':'no-text');
-    dictInfo.textContent = `${raw.length}-letter words aren't in our ${dict} list yet — this is a general dictionary check, not official Scrabble validation.`;
+    dictInfo.textContent = `${raw.length}-letter words are checked against ENABLE, a word-game dictionary (also used by Words With Friends) — a close but not byte-identical match to the current licensed ${dict} tournament list.`;
     recordLookup(raw, isValid, dict, true);
   }catch(e){
     resEl.className = 'lookup-result show';
-    verdict.textContent = "Couldn't reach the dictionary service";
+    verdict.textContent = "Couldn't load the word list";
     verdict.className = 'verdict';
     dictInfo.textContent = 'Check your connection and try again.';
   }
