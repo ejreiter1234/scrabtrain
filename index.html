@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#2b4b3c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Scrabble Trainer">
+<meta name="description" content="Practice 2 and 3 letter Scrabble words: TWL and SOWPODS dictionaries, word lookup, and anagram tools.">
+<title>Scrabble 2s &amp; 3s Trainer</title>
+<style>
+:root{
+  --board:#2b4b3c;
+  --board-dark:#1e362b;
+  --tile:#f0e6d2;
+  --tile-shadow:#c9b98f;
+  --ink:#3a2f22;
+  --accent:#d4a24c;
+  --good:#3f8f5f;
+  --bad:#c0533e;
+  --muted:#8ba493;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;height:100%;}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  background:var(--board);
+  background-image:radial-gradient(circle at 50% 0%, var(--board) 0%, var(--board-dark) 100%);
+  color:var(--tile);
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  overflow-x:hidden;
+}
+.app{max-width:480px;margin:0 auto;width:100%;min-height:100vh;display:flex;flex-direction:column;padding:0 16px 24px;}
+h1,h2,h3{font-family:Georgia,'Times New Roman',serif;margin:0;}
+header.top{padding:18px 0 10px;text-align:center;}
+header.top h1{font-size:22px;letter-spacing:0.5px;color:var(--tile);}
+header.top .sub{font-size:12px;color:var(--muted);margin-top:2px;}
+
+nav.tabs{display:flex;gap:6px;margin:10px 0 16px;background:rgba(0,0,0,0.2);border-radius:12px;padding:4px;}
+nav.tabs button{
+  flex:1;background:transparent;border:none;color:var(--muted);
+  font-size:13px;font-weight:600;padding:9px 4px;border-radius:9px;cursor:pointer;
+  transition:all .15s;
+}
+nav.tabs button.active{background:var(--tile);color:var(--board-dark);}
+
+.screen{display:none;flex:1;flex-direction:column;}
+.screen.active{display:flex;}
+
+.card{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:16px;margin-bottom:14px;}
+
+/* Setup */
+.opt-group label.group-label{display:block;font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:8px;}
+.opt-row{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+.opt-btn{
+  flex:1;min-width:70px;background:rgba(255,255,255,0.06);border:1.5px solid rgba(255,255,255,0.15);
+  color:var(--tile);padding:10px 8px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;text-align:center;
+}
+.opt-btn.selected{background:var(--accent);border-color:var(--accent);color:var(--board-dark);}
+.opt-btn small{display:block;font-weight:400;font-size:10px;opacity:0.8;margin-top:2px;}
+
+.big-btn{
+  width:100%;background:var(--accent);color:var(--board-dark);border:none;border-radius:12px;
+  padding:16px;font-size:17px;font-weight:700;cursor:pointer;margin-top:6px;
+  box-shadow:0 4px 0 #a87c2d;
+}
+.big-btn:active{transform:translateY(3px);box-shadow:0 1px 0 #a87c2d;}
+.big-btn.secondary{background:rgba(255,255,255,0.1);color:var(--tile);box-shadow:0 4px 0 rgba(0,0,0,0.25);}
+
+.stats-mini{display:flex;justify-content:space-around;text-align:center;}
+.stats-mini div{flex:1;}
+.stats-mini .n{font-size:20px;font-weight:700;font-family:Georgia,serif;}
+.stats-mini .l{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;}
+
+/* Play screen */
+.progress-wrap{display:flex;align-items:center;gap:10px;margin-bottom:18px;font-size:12px;color:var(--muted);}
+.progress-bar{flex:1;height:6px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden;}
+.progress-fill{height:100%;background:var(--accent);border-radius:3px;transition:width .3s;}
+
+.score-row{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted);margin-bottom:6px;}
+.score-row b{color:var(--tile);}
+#dictBadge{font-size:11px;font-weight:800;letter-spacing:0.5px;padding:4px 10px;border-radius:20px;background:var(--accent);color:var(--board-dark);}
+
+.tile-stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:220px;gap:14px;}
+
+.feedback-banner{height:44px;display:flex;align-items:center;justify-content:center;gap:10px;opacity:0;transform:translateY(6px);transition:opacity .15s ease,transform .15s ease;}
+.feedback-banner.show{opacity:1;transform:translateY(0);}
+.feedback-banner .fb-icon{width:34px;height:34px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:900;color:#fff;box-shadow:0 4px 10px rgba(0,0,0,0.35);}
+.feedback-banner.good .fb-icon{background:var(--good);}
+.feedback-banner.bad .fb-icon{background:var(--bad);}
+.feedback-banner .fb-text{font-size:14px;font-weight:700;}
+.feedback-banner.good .fb-text{color:#8fe0ae;}
+.feedback-banner.bad .fb-text{color:#f0a08c;}
+.tile-group{display:flex;gap:8px;}
+.tile{
+  width:64px;height:64px;background:var(--tile);color:var(--ink);border-radius:8px;
+  display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:700;
+  font-family:Georgia,serif;box-shadow:0 5px 0 var(--tile-shadow),0 8px 14px rgba(0,0,0,0.35);
+  position:relative;
+}
+.tile .pv{position:absolute;bottom:3px;right:6px;font-size:9px;font-weight:600;color:#7a6b4f;}
+.tile.flash-good{background:#cdeed9;box-shadow:0 5px 0 #8fd1ac,0 8px 14px rgba(0,0,0,0.35);}
+.tile.flash-bad{background:#f4d2c9;box-shadow:0 5px 0 #e0a290,0 8px 14px rgba(0,0,0,0.35);}
+
+.answer-row{display:flex;gap:12px;margin-top:20px;}
+.ans-btn{
+  flex:1;padding:20px 8px;border-radius:14px;border:none;font-size:16px;font-weight:700;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+}
+.ans-btn.valid{background:var(--good);color:#fff;box-shadow:0 4px 0 #2c6b45;}
+.ans-btn.invalid{background:var(--bad);color:#fff;box-shadow:0 4px 0 #8a3c2b;}
+.ans-btn:active{transform:translateY(3px);box-shadow:none;}
+.ans-btn:disabled{opacity:0.5;}
+.ans-btn .icon{font-size:22px;}
+
+.next-btn{margin-top:14px;}
+
+.quit-link{text-align:center;margin-top:16px;font-size:12px;color:var(--muted);text-decoration:underline;cursor:pointer;}
+
+.played-section{margin-top:18px;}
+.played-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+.played-header h4{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin:0;}
+.played-list{max-height:180px;overflow-y:auto;border-top:1px solid rgba(255,255,255,0.08);}
+.played-row{display:flex;justify-content:space-between;align-items:center;padding:4px 2px;font-size:13px;border-bottom:1px solid rgba(255,255,255,0.06);}
+.played-row .pw{font-family:Georgia,serif;font-weight:700;letter-spacing:0.5px;min-width:32px;}
+.played-row .pw-badges{display:flex;gap:4px;align-items:center;}
+.pw-badge{font-size:9px;padding:2px 6px;border-radius:20px;font-weight:700;}
+.pw-badge.valid{background:rgba(63,143,95,0.25);color:#8fe0ae;}
+.pw-badge.invalid{background:rgba(192,83,62,0.25);color:#f0a08c;}
+.pw-icon{font-size:11px;font-weight:900;width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+.pw-icon.correct{color:#fff;background:var(--good);}
+.pw-icon.wrong{color:#fff;background:var(--bad);}
+.played-empty{text-align:center;color:var(--muted);font-size:12px;padding:14px 0;}
+
+/* Summary */
+.summary-hero{text-align:center;margin:12px 0 18px;}
+.summary-hero .pct{font-size:44px;font-weight:700;font-family:Georgia,serif;color:var(--accent);}
+.summary-hero .lbl{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;}
+.miss-list{max-height:280px;overflow-y:auto;}
+.miss-item{
+  display:flex;justify-content:space-between;align-items:center;padding:10px 12px;
+  background:rgba(255,255,255,0.05);border-radius:10px;margin-bottom:6px;font-family:Georgia,serif;
+}
+.miss-item .w{font-size:17px;font-weight:700;letter-spacing:1px;}
+.miss-item .badge{font-size:11px;padding:3px 8px;border-radius:20px;font-family:-apple-system,sans-serif;font-weight:600;}
+.badge.valid{background:rgba(63,143,95,0.25);color:#8fe0ae;}
+.badge.invalid{background:rgba(192,83,62,0.25);color:#f0a08c;}
+.miss-item .tries{font-size:11px;color:var(--muted);margin-left:8px;}
+
+/* Word list browser */
+.wl-controls{display:flex;gap:8px;margin-bottom:12px;}
+.search-box{
+  width:100%;padding:11px 14px;border-radius:10px;border:1.5px solid rgba(255,255,255,0.15);
+  background:rgba(255,255,255,0.06);color:var(--tile);font-size:15px;margin-bottom:12px;
+}
+.search-box::placeholder{color:var(--muted);}
+.wl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:6px;}
+.wl-word{
+  background:var(--tile);color:var(--ink);border-radius:6px;text-align:center;padding:8px 2px;
+  font-family:Georgia,serif;font-weight:700;font-size:15px;letter-spacing:0.5px;cursor:pointer;
+}
+.wl-count{font-size:12px;color:var(--muted);margin-bottom:10px;}
+.wl-sowpods-only{background:#e4d7f5;}
+
+/* Lookup */
+.lookup-input-row{display:flex;gap:8px;}
+.lookup-input-row input{flex:1;}
+.lookup-result{margin-top:16px;border-radius:14px;padding:20px;text-align:center;display:none;}
+.lookup-result.show{display:block;}
+.lookup-result.yes{background:rgba(63,143,95,0.2);border:1.5px solid var(--good);}
+.lookup-result.no{background:rgba(192,83,62,0.2);border:1.5px solid var(--bad);}
+.lookup-result .word{font-family:Georgia,serif;font-size:26px;font-weight:700;letter-spacing:1px;margin-bottom:6px;}
+.lookup-result .verdict{font-size:15px;font-weight:700;}
+.lookup-result .verdict.yes-text{color:#8fe0ae;}
+.lookup-result .verdict.no-text{color:#f0a08c;}
+.lookup-result .dictinfo{font-size:12px;color:var(--muted);margin-top:6px;}
+.lookup-history{margin-top:16px;}
+.lookup-history .hist-item{display:flex;justify-content:space-between;padding:8px 12px;font-size:13px;border-bottom:1px solid rgba(255,255,255,0.06);}
+
+/* Anagram */
+.anagram-results{margin-top:14px;display:flex;flex-direction:column;gap:14px;}
+.anagram-group h4{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin:0 0 8px;}
+.anagram-empty{text-align:center;color:var(--muted);font-size:13px;padding:30px 10px;}
+
+.small-note{font-size:11.5px;color:var(--muted);line-height:1.5;margin-top:4px;}
+
+.dict-pill{
+  display:inline-block;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;
+  background:var(--accent);color:var(--board-dark);margin-left:6px;vertical-align:middle;
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <h1>🀫 Scrabble Trainer</h1>
+    <div class="sub">2s &amp; 3s word validity practice</div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="play">Play</button>
+    <button class="tab-btn" data-tab="wordlist">Word List</button>
+    <button class="tab-btn" data-tab="lookup">Lookup</button>
+    <button class="tab-btn" data-tab="anagram">Anagram</button>
+  </nav>
+
+  <!-- PLAY TAB: contains setup, playing, summary sub-screens -->
+  <div class="screen active" id="tab-play">
+
+    <div class="screen active" id="screen-setup">
+      <div class="card">
+        <div class="opt-group">
+          <label class="group-label">Dictionary</label>
+          <div class="opt-row">
+            <div class="opt-btn" data-group="dict" data-val="TWL">TWL<small>North America</small></div>
+            <div class="opt-btn selected" data-group="dict" data-val="SOWPODS">SOWPODS<small>International</small></div>
+          </div>
+        </div>
+        <div class="opt-group">
+          <label class="group-label">Word length</label>
+          <div class="opt-row">
+            <div class="opt-btn" data-group="len" data-val="both">Both</div>
+            <div class="opt-btn selected" data-group="len" data-val="2">2-letter</div>
+            <div class="opt-btn" data-group="len" data-val="3">3-letter</div>
+          </div>
+        </div>
+        <div class="opt-group">
+          <label class="group-label">Round length</label>
+          <div class="opt-row">
+            <div class="opt-btn" data-group="round" data-val="20">20</div>
+            <div class="opt-btn selected" data-group="round" data-val="50">50</div>
+            <div class="opt-btn" data-group="round" data-val="100">100</div>
+          </div>
+        </div>
+        <button class="big-btn" id="startBtn">Start Round</button>
+      </div>
+
+      <div class="card" id="lifetimeStatsCard" style="display:none;">
+        <div class="stats-mini">
+          <div><div class="n" id="statRounds">0</div><div class="l">Rounds</div></div>
+          <div><div class="n" id="statAccuracy">0%</div><div class="l">Avg Accuracy</div></div>
+          <div><div class="n" id="statMissed">0</div><div class="l">Words to Review</div></div>
+        </div>
+        <button class="big-btn secondary" id="reviewMissedBtn" style="margin-top:14px;display:none;">Review My Missed Words</button>
+      </div>
+
+
+    </div>
+
+    <div class="screen" id="screen-playing">
+      <div class="score-row">
+        <span>Score: <b id="liveScore">0</b>/<span id="liveAttempted">0</span></span>
+        <span id="dictBadge">TWL</span>
+      </div>
+      <div class="progress-wrap">
+        <span id="progressLabel">0/50</span>
+        <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+      </div>
+
+      <div class="tile-stage">
+        <div class="feedback-banner" id="feedbackBanner">
+          <span class="fb-icon" id="fbIcon"></span>
+          <span class="fb-text" id="fbText"></span>
+        </div>
+        <div class="tile-group" id="tileGroup"></div>
+      </div>
+
+      <div class="answer-row" id="answerRow">
+        <button class="ans-btn invalid" id="btnInvalid"><span class="icon">✕</span>NOT A WORD</button>
+        <button class="ans-btn valid" id="btnValid"><span class="icon">✓</span>VALID WORD</button>
+      </div>
+
+      <button class="big-btn next-btn" id="nextBtn" style="display:none;">Next →</button>
+      <div class="quit-link" id="quitLink">End round early</div>
+
+      <div class="played-section">
+        <div class="played-header">
+          <h4>Played this round</h4>
+          <h4 id="playedCount">0</h4>
+        </div>
+        <div class="played-list" id="playedList">
+          <div class="played-empty">Answers will show up here as you go.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="screen" id="screen-summary">
+      <div class="card">
+        <div class="summary-hero">
+          <div class="pct" id="summaryPct">0%</div>
+          <div class="lbl">First-try accuracy</div>
+        </div>
+        <div class="stats-mini">
+          <div><div class="n" id="summaryWords">0</div><div class="l">Distinct Words</div></div>
+          <div><div class="n" id="summaryAttempts">0</div><div class="l">Round Size</div></div>
+          <div><div class="n" id="summaryMissed">0</div><div class="l">Missed</div></div>
+        </div>
+      </div>
+
+      <h3 style="margin:6px 0 10px;font-size:15px;">Words you missed</h3>
+      <div class="card miss-list" id="missList"></div>
+
+      <button class="big-btn" id="practiceMissedBtn">Practice These Again</button>
+      <button class="big-btn secondary" id="newRoundBtn">New Round</button>
+    </div>
+  </div>
+
+  <!-- WORD LIST TAB -->
+  <div class="screen" id="tab-wordlist">
+    <div class="card">
+      <div class="opt-row">
+        <div class="opt-btn" data-group="wldict" data-val="TWL">TWL</div>
+        <div class="opt-btn selected" data-group="wldict" data-val="SOWPODS">SOWPODS</div>
+      </div>
+      <div class="opt-row">
+        <div class="opt-btn selected" data-group="wllen" data-val="2">2-letter</div>
+        <div class="opt-btn" data-group="wllen" data-val="3">3-letter</div>
+      </div>
+      <input type="text" class="search-box" id="wlSearch" placeholder="Filter (e.g. starts with Q, contains Z)…">
+    </div>
+    <div class="wl-count" id="wlCount"></div>
+    <div class="wl-grid" id="wlGrid"></div>
+  </div>
+
+  <!-- LOOKUP TAB -->
+  <div class="screen" id="tab-lookup">
+    <div class="card">
+      <label class="group-label">Dictionary</label>
+      <div class="opt-row">
+        <div class="opt-btn" data-group="lkdict" data-val="TWL">TWL</div>
+        <div class="opt-btn selected" data-group="lkdict" data-val="SOWPODS">SOWPODS</div>
+      </div>
+      <div class="lookup-input-row">
+        <input type="text" class="search-box" id="lookupInput" placeholder="Type any word…" maxlength="20" autocapitalize="characters">
+      </div>
+      <button class="big-btn" id="lookupBtn" style="margin-top:0;">Check Word</button>
+      <p class="small-note">2–3 letter words are checked exactly against the TWL/SOWPODS lists used in this app. 4+ letter words are checked live against a general English dictionary as a best-effort signal — not official Scrabble validation.</p>
+    </div>
+
+    <div class="lookup-result" id="lookupResult">
+      <div class="word" id="lookupWord"></div>
+      <div class="verdict" id="lookupVerdict"></div>
+      <div class="dictinfo" id="lookupDictInfo"></div>
+    </div>
+
+    <div class="card lookup-history" id="lookupHistoryCard" style="display:none;">
+      <label class="group-label">Recent lookups</label>
+      <div id="lookupHistoryList"></div>
+    </div>
+  </div>
+
+  <!-- ANAGRAM TAB -->
+  <div class="screen" id="tab-anagram">
+    <div class="card">
+      <label class="group-label">Enter 2–3 letters</label>
+      <input type="text" class="search-box" id="anagramInput" placeholder="e.g. AIT" maxlength="3" autocapitalize="characters">
+      <div class="opt-row" style="margin-top:10px;">
+        <div class="opt-btn" data-group="agdict" data-val="TWL">TWL</div>
+        <div class="opt-btn selected" data-group="agdict" data-val="SOWPODS">SOWPODS</div>
+      </div>
+      <button class="big-btn" id="anagramBtn">Find Words</button>
+      <p class="small-note">Shows every valid 2 and 3-letter word that can be made from the letters you enter (using each letter at most as many times as you typed it).</p>
+    </div>
+    <div class="anagram-results" id="anagramResults"></div>
+  </div>
+
+</div>
+
+<script>
+/* =====================================================
+   WORD DATA
+   Compiled from standard published TWL / SOWPODS 2 & 3
+   letter reference lists for study purposes. Not claimed
+   to be a byte-perfect mirror of the current official
+   tournament dictionary — for tournament play, verify
+   with your club's official word checker.
+===================================================== */
+const TWL2 = ["AA","AB","AD","AH","AI","AL","AM","AN","AR","AS","AT","AW","AX","AY","BA","BE","BI","BO","BY","DE","DO","ED","EF","EH","EL","EM","EN","ER","ES","ET","EW","EX","FA","FE","GO","HA","HE","HI","HM","HO","ID","IF","IN","IO","IS","IT","JO","KA","LA","LO","MA","ME","MI","MM","MO","MU","MY","NA","NE","NO","NU","OD","OE","OF","OH","OI","OK","OM","ON","OP","OR","OS","OW","OX","OY","PA","PE","PH","PI","PO","QI","RE","SH","SI","SO","TA","TE","TI","TO","UH","UM","UN","UP","US","UT","WE","WO","XI","XU","YA","YE","YO","YU","ZA","ZO"];
+
+const SOWPODS_ONLY_2 = ["AE","AG","DA","EY","GI","GU","HU","KI","KO","KY","LI","OB","OP","PU","ST","UG","ZE"];
+
+const TWL3 = ["AAH","AAL","AAS","ABA","ABO","ABS","ABY","ACE","ACT","ADD","ADO","ADS","ADZ","AFF","AFT","AGA","AGE","AGO","AGS","AHA","AHI","AHS","AID","AIL","AIM","AIN","AIR","AIS","AIT","ALA","ALB","ALE","ALL","ALP","ALS","ALT","AMA","AMI","AMP","AMU","ANA","AND","ANE","ANI","ANT","ANY","APE","APO","APP","APT","ARB","ARC","ARE","ARF","ARK","ARM","ARS","ART","ASH","ASK","ASP","ASS","ATE","ATT","AUK","AVA","AVE","AVO","AWA","AWE","AWL","AWN","AXE","AYE","AYS","AZO",
+"BAA","BAD","BAG","BAH","BAL","BAM","BAN","BAP","BAR","BAS","BAT","BAY","BED","BEE","BEG","BEL","BEN","BES","BET","BEY","BIB","BID","BIG","BIN","BIO","BIS","BIT","BIZ","BOA","BOB","BOD","BOG","BOO","BOP","BOR","BOS","BOT","BOW","BOX","BOY","BRA","BRO","BRR","BUB","BUD","BUG","BUM","BUN","BUR","BUS","BUT","BUY","BYE","BYS",
+"CAB","CAD","CAM","CAN","CAP","CAR","CAT","CAW","CAY","CEE","CEL","CEP","CHI","CIG","CIS","COB","COD","COG","COL","CON","COO","COP","COR","COS","COT","COW","COX","COY","COZ","CRY","CUB","CUD","CUE","CUM","CUP","CUR","CUT","CWM",
+"DAB","DAD","DAG","DAH","DAK","DAL","DAM","DAP","DAW","DAY","DEB","DEE","DEF","DEL","DEN","DEV","DEW","DEX","DEY","DIB","DID","DIE","DIF","DIG","DIM","DIN","DIP","DIS","DIT","DOC","DOE","DOG","DOH","DOL","DOM","DON","DOR","DOS","DOT","DOW","DRY","DUB","DUD","DUE","DUG","DUH","DUI","DUN","DUO","DUP","DYE",
+"EAR","EAT","EAU","EBB","ECO","ECU","EDH","EEK","EEL","EFF","EFS","EFT","EGG","EGO","EKE","ELD","ELF","ELK","ELL","ELM","ELS","EME","EMO","EMS","EMU","END","ENG","ENS","EON","ERA","ERE","ERG","ERN","ERR","ERS","ESS","ETA","ETH","EVE","EWE","EYE",
+"FAB","FAD","FAG","FAN","FAR","FAS","FAT","FAX","FAY","FED","FEE","FEH","FEM","FEN","FES","FET","FEU","FEW","FEY","FEZ","FIB","FID","FIE","FIG","FIL","FIN","FIR","FIT","FIX","FIZ","FLU","FLY","FOB","FOE","FOG","FON","FOP","FOR","FOU","FOX","FOY","FRO","FRY","FUB","FUD","FUG","FUN","FUR",
+"GAB","GAD","GAE","GAG","GAL","GAM","GAN","GAP","GAR","GAS","GAT","GAY","GED","GEE","GEL","GEM","GEN","GET","GEY","GHI","GIB","GID","GIE","GIF","GIG","GIN","GIP","GIT","GNU","GOA","GOB","GOD","GOO","GOR","GOT","GOX","GOY","GUB","GUL","GUM","GUN","GUT","GUV","GUY","GYM","GYP",
+"HAD","HAE","HAG","HAH","HAJ","HAM","HAN","HAO","HAP","HAS","HAT","HAW","HAY","HEH","HEM","HEN","HEP","HER","HES","HET","HEW","HEX","HEY","HIC","HID","HIE","HIM","HIN","HIP","HIS","HIT","HMM","HOB","HOC","HOD","HOE","HOG","HOI","HON","HOP","HOT","HOW","HOY","HUB","HUE","HUG","HUH","HUM","HUN","HUP","HUT","HYP",
+"ICE","ICH","ICK","ICY","IDS","IFF","IFS","IGG","ILK","ILL","IMP","INK","INN","INS","ION","IRE","IRK","ISM","ITA","ITS","IVY",
+"JAB","JAG","JAM","JAR","JAW","JAY","JEE","JET","JEU","JEW","JIB","JIG","JIN","JOB","JOE","JOG","JOT","JOW","JOY","JUG","JUN","JUS","JUT",
+"KAB","KAE","KAF","KAS","KAT","KAY","KEA","KEF","KEG","KEN","KEP","KEX","KEY","KHI","KID","KIF","KIN","KIP","KIR","KIT","KOA","KOB","KOI","KOP","KOR","KOS","KOW","KUE","KYE","KYU",
+"LAB","LAC","LAD","LAG","LAH","LAM","LAP","LAR","LAS","LAT","LAV","LAW","LAX","LAY","LEA","LED","LEE","LEG","LEI","LEK","LEP","LES","LET","LEU","LEV","LEW","LEX","LEY","LIB","LID","LIE","LIN","LIP","LIS","LIT","LOB","LOG","LOO","LOP","LOR","LOT","LOW","LOX","LUD","LUG","LUM","LUV","LUX","LYE",
+"MAC","MAD","MAE","MAG","MAN","MAP","MAR","MAS","MAT","MAW","MAX","MAY","MED","MEG","MEL","MEM","MEN","MET","MEW","MHO","MIB","MIC","MID","MIG","MIL","MIM","MIR","MIS","MIX","MOA","MOB","MOC","MOD","MOG","MOL","MOM","MON","MOO","MOP","MOR","MOS","MOT","MOW","MUD","MUG","MUM","MUN","MUS","MUT","MYC",
+"NAB","NAE","NAG","NAH","NAM","NAN","NAP","NAT","NAW","NAY","NEB","NEE","NEG","NET","NEW","NIB","NIL","NIM","NIP","NIT","NIX","NOB","NOD","NOG","NOH","NOM","NOO","NOR","NOS","NOT","NOW","NTH","NUB","NUN","NUS","NUT","NYE",
+"OAF","OAK","OAR","OAT","OBA","OBE","OBI","OBO","OBS","OCA","ODA","ODD","ODE","ODS","OES","OFF","OFT","OHM","OHO","OHS","OIK","OIL","OKA","OKE","OLD","OLE","OMS","ONE","ONO","ONS","ONY","OOF","OOH","OOM","OOT","OPS","OPT","ORA","ORB","ORC","ORE","ORS","ORT","OSE","OUD","OUR","OUT","OVA","OWE","OWL","OWN","OWT","OXO","OXY","OYE","OYS",
+"PAC","PAD","PAH","PAL","PAM","PAN","PAP","PAR","PAS","PAT","PAW","PAX","PAY","PEA","PEC","PED","PEE","PEG","PEH","PEN","PEP","PES","PET","PEW","PHI","PHO","PHT","PIA","PIC","PIE","PIG","PIN","PIP","PIS","PIT","PIU","PIX","PLY","POD","POH","POI","POL","POM","POO","POP","POT","POW","POX","PRO","PRY","PSI","PST","PUB","PUD","PUG","PUL","PUN","PUP","PUR","PUS","PUT","PUY","PYA","PYE","PYX",
+"QAT",
+"RAD","RAG","RAH","RAI","RAJ","RAM","RAN","RAP","RAS","RAT","RAW","RAX","RAY","REB","REC","RED","REE","REF","REG","REI","REM","REP","RES","RET","REV","REW","REX","RHO","RIA","RIB","RID","RIF","RIG","RIM","RIN","RIP","ROB","ROC","ROD","ROE","ROM","ROT","ROW","RUB","RUE","RUG","RUM","RUN","RUT","RYA","RYE",
+"SAB","SAC","SAD","SAE","SAG","SAL","SAP","SAT","SAU","SAV","SAW","SAX","SAY","SEA","SEC","SEE","SEG","SEI","SEL","SEN","SER","SET","SEW","SEX","SHA","SHE","SHH","SHY","SIB","SIC","SIM","SIN","SIP","SIR","SIS","SIT","SIX","SKA","SKI","SKY","SLY","SOB","SOD","SOL","SON","SOP","SOS","SOT","SOU","SOW","SOX","SOY","SPA","SPY","STY","SUB","SUE","SUM","SUN","SUP","SYN",
+"TAB","TAD","TAE","TAG","TAJ","TAM","TAN","TAO","TAP","TAR","TAS","TAT","TAU","TAV","TAW","TAX","TEA","TED","TEE","TEG","TEL","TEN","TET","TEW","TEX","THE","THO","THY","TIC","TIE","TIL","TIN","TIP","TIS","TIT","TOD","TOE","TOG","TOM","TON","TOO","TOP","TOR","TOT","TOW","TOY","TRY","TSK","TUB","TUG","TUI","TUN","TUP","TUT","TUX","TWA","TWO","TYE",
+"UDO","UGH","UKE","ULU","UMM","UMP","UNI","UPO","UPS","URD","URN","URP","USE","UTA","UTE","UTS",
+"VAC","VAN","VAR","VAS","VAT","VAV","VAW","VEE","VET","VEX","VIA","VID","VIE","VIG","VIM","VIS","VOE","VOW","VOX","VUG",
+"WAB","WAD","WAE","WAG","WAN","WAP","WAR","WAS","WAT","WAW","WAX","WAY","WEB","WED","WEE","WEN","WET","WEX","WHA","WHO","WHY","WIG","WIN","WIS","WIT","WIZ","WOE","WOG","WOK","WON","WOO","WOP","WOS","WOT","WOW","WRY","WUD","WUS","WUZ","WYE","WYN",
+"XIS",
+"YAG","YAH","YAK","YAM","YAP","YAR","YAW","YAY","YEA","YEH","YEN","YEP","YES","YET","YEW","YID","YIN","YIP","YOB","YOD","YOK","YOM","YON","YOU","YOW","YUK","YUM","YUP",
+"ZAG","ZAP","ZAS","ZAX","ZED","ZEE","ZEK","ZEP","ZIG","ZIN","ZIP","ZIT","ZOA","ZOO","ZUZ"];
+
+const SOWPODS_ONLY_3 = ["AAL","AAS","ABO","ABY","ADO","AGE","AGO","AIA","AIN","AIT","ALA","ALS","ANA","ARB","ATT","AVO","AWA","AYS","BAP","BEN","BES","BEY","BIO","BIS","BOD","BOR","BOS","BRO","BUB","BYS","CIS","COR","COZ","DAG","DEV","DEY","DIF","DOL","DOR","DOW","DUI","EEK","ELS","EME","EMO","ENG","ENS","ERS","ESS","FAE","FAS","FEH","FET","FEU","FIL","FON","FOU","FUB","FUD","GAE","GAN","GAT","GED","GEO","GEY","GIB","GID","GIE","GIF","GIP","GOR","GOX","GOY","GUB","GUL","GUV","HAE","HAN","HAO","HES","HET","HIC","HOC","HOI","HYP","IFF","IGG","ITA","JEU","JIN","JOW","KAB","KAE","KAF","KAS","KEA","KEF","KEP","KEX","KHI","KIF","KIR","KOA","KOB","KOI","KOP","KOR","KOS","KOW","KUE","KYE","KYU","LAH","LAR","LAV","LEK","LEP","LES","LEU","LEV","LEW","LEX","LOR","LUV","MAE","MED","MEL","MEM","MHO","MIB","MIG","MIM","MIR","MOC","MOG","MOL","MON","MYC","NAM","NAT","NAW","NEB","NEG","NIM","NOH","NOM","NOO","NUS","OBA","OBE","OBS","OCA","ODA","OES","OHO","OIK","OKA","OMS","ONO","ONY","OOM","OOT","OPS","ORA","ORS","OSE","OUD","OXO","OYE","PAH","PAM","PAS","PEC","PED","PEH","PES","PHO","PHT","PIA","PIU","POH","POL","POM","PRO","PST","PUL","PUR","PUY","PYA","PYE","QAT","RAI","RAJ","REB","REC","REE","REI","RES","RHO","RIA","RIF","RIN","ROC","ROM","RYA","SAE","SAL","SAU","SAV","SEG","SEI","SEL","SEN","SER","SHA","SHH","SIM","SKA","SOL","SOU","SOX","STY","SYN","TAE","TAJ","TAO","TAS","TAT","TAV","TEG","TEL","TET","TEW","TEX","THO","TIL","TIS","TOD","TOG","TOR","TSK","TUI","TUP","TUX","TWA","TYE","UDO","UKE","ULU","UMM","UPO","URD","URP","UTA","UTS","VAR","VAS","VAV","VAW","VOE","VOW","VOX","VUG","WAB","WAE","WAP","WAT","WAW","WEX","WHA","WOG","WOP","WOS","WOT","WUD","WUS","WUZ","WYN","YAG","YAH","YAR","YEH","YID","YIN","YOB","YOD","YOK","YOM","YOW"];
+
+// Build final sets
+function buildDict(){
+  const twl2 = new Set(TWL2);
+  const twl3 = new Set(TWL3);
+  const sow2 = new Set([...TWL2, ...SOWPODS_ONLY_2]);
+  const sow3 = new Set([...TWL3, ...SOWPODS_ONLY_3]);
+  return {
+    TWL: { 2: twl2, 3: twl3 },
+    SOWPODS: { 2: sow2, 3: sow3 }
+  };
+}
+const DICT = buildDict();
+
+function wordList(dict, len){ return Array.from(DICT[dict][len]).sort(); }
+
+/* =====================================================
+   DECOY GENERATION
+   Near-miss words: real word mutated by one letter, that
+   is NOT itself valid. Filtered to avoid pure nonsense
+   (must contain a vowel or Y, avoid double rare letters).
+===================================================== */
+const ALPHA = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const RARE = new Set(["Q","X","Z","J"]);
+const VOWELY = new Set(["A","E","I","O","U","Y"]);
+
+function isPlausible(w){
+  let vowels = 0, rare = 0;
+  for(const c of w){
+    if(VOWELY.has(c)) vowels++;
+    if(RARE.has(c)) rare++;
+  }
+  if(vowels === 0) return false;
+  if(rare >= 2) return false;
+  return true;
+}
+
+function generateDecoys(validSet, length){
+  const decoys = new Set();
+  for(const word of validSet){
+    for(let i=0;i<length;i++){
+      for(const letter of ALPHA){
+        if(letter === word[i]) continue;
+        const cand = word.slice(0,i)+letter+word.slice(i+1);
+        if(!validSet.has(cand) && isPlausible(cand)) decoys.add(cand);
+      }
+    }
+    if(length===2){
+      const rev = word[1]+word[0];
+      if(!validSet.has(rev) && isPlausible(rev)) decoys.add(rev);
+    }
+  }
+  return Array.from(decoys);
+}
+
+let decoyCache = {};
+function getDecoys(dict, len){
+  const key = dict+len;
+  if(!decoyCache[key]) decoyCache[key] = generateDecoys(DICT[dict][len], len);
+  return decoyCache[key];
+}
+
+/* =====================================================
+   STORAGE (persistent progress across sessions)
+   Uses the browser's own localStorage — works once this
+   file is hosted anywhere (GitHub Pages, Netlify, etc.)
+   and revisited from the same browser/device. It's per
+   -device, not synced across phones/computers.
+===================================================== */
+let progress = { rounds: 0, totalAccuracySum: 0, wordStats: {} }; // wordStats[word] = {wrong, right}
+const STORAGE_KEY = 'scrabble_trainer_progress';
+
+function loadProgress(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){ progress = JSON.parse(raw); }
+  }catch(e){ /* localStorage unavailable or no saved progress yet */ }
+  renderLifetimeStats();
+}
+function saveProgress(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)); }catch(e){ /* storage full or blocked */ }
+}
+
+function renderLifetimeStats(){
+  const card = document.getElementById('lifetimeStatsCard');
+  if(progress.rounds === 0){ card.style.display='none'; return; }
+  card.style.display='block';
+  document.getElementById('statRounds').textContent = progress.rounds;
+  const avg = progress.rounds ? Math.round(progress.totalAccuracySum/progress.rounds) : 0;
+  document.getElementById('statAccuracy').textContent = avg+'%';
+  const missedCount = Object.keys(progress.wordStats).filter(w=>progress.wordStats[w].wrong>0).length;
+  document.getElementById('statMissed').textContent = missedCount;
+  const reviewBtn = document.getElementById('reviewMissedBtn');
+  if(missedCount>0){ reviewBtn.style.display='block'; } else { reviewBtn.style.display='none'; }
+}
+
+/* =====================================================
+   TAB NAVIGATION
+===================================================== */
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('#tab-play, #tab-wordlist, #tab-lookup, #tab-anagram').forEach(s=>s.classList.remove('active'));
+    document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
+  });
+});
+
+/* Generic option group handler */
+function wireOptGroup(container, groupName){
+  container.querySelectorAll(`[data-group="${groupName}"]`).forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      container.querySelectorAll(`[data-group="${groupName}"]`).forEach(b=>b.classList.remove('selected'));
+      btn.classList.add('selected');
+    });
+  });
+}
+wireOptGroup(document, 'dict');
+wireOptGroup(document, 'len');
+wireOptGroup(document, 'round');
+wireOptGroup(document, 'wldict');
+wireOptGroup(document, 'wllen');
+wireOptGroup(document, 'lkdict');
+wireOptGroup(document, 'agdict');
+
+function getSelected(groupName){
+  return document.querySelector(`[data-group="${groupName}"].selected`).dataset.val;
+}
+
+/* =====================================================
+   GAME STATE
+===================================================== */
+let game = null;
+
+function buildPool(dict, lenMode){
+  let lengths = lenMode==='both' ? [2,3] : [Number(lenMode)];
+  let valids = [], invalids = [];
+  lengths.forEach(len=>{
+    valids = valids.concat(wordList(dict, len).map(w=>({word:w, isValid:true, len})));
+    invalids = invalids.concat(getDecoys(dict, len).map(w=>({word:w, isValid:false, len})));
+  });
+  return {valids, invalids};
+}
+
+function shuffle(arr){
+  for(let i=arr.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]]=[arr[j],arr[i]];
+  }
+  return arr;
+}
+
+function startRound(size, dict, lenMode, presetWords){
+  const {valids, invalids} = buildPool(dict, lenMode);
+  let selection = [];
+
+  if(presetWords){
+    selection = presetWords;
+  } else {
+    const nValid = Math.ceil(size/2);
+    const nInvalid = size - nValid;
+    const shuffledValid = shuffle([...valids]).slice(0, nValid);
+    const shuffledInvalid = shuffle([...invalids]).slice(0, nInvalid);
+    selection = shuffle([...shuffledValid, ...shuffledInvalid]);
+  }
+
+  game = {
+    dict, lenMode,
+    total: selection.length,
+    queue: selection.map(x=>({...x, attempts:0, everMissed:false})),
+    cleared: [],
+    missed: {}, // word -> {isValid, count}
+    log: [], // running list of every answer given this round
+    correctFirstTry: 0,
+    totalAnswers: 0,
+    current: null,
+    awaitingNext: false,
+    advanceTimer: null
+  };
+  showScreen('screen-playing');
+  document.getElementById('dictBadge').textContent = dict;
+  document.getElementById('playedList').innerHTML = '<div class="played-empty">Answers will show up here as you go.</div>';
+  document.getElementById('playedCount').textContent = '0';
+  nextQuestion();
+}
+
+function showScreen(id){
+  document.querySelectorAll('#tab-play .screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function renderTiles(word){
+  const pts = {A:1,E:1,I:1,O:1,U:1,L:1,N:1,S:1,T:1,R:1,D:2,G:2,B:3,C:3,M:3,P:3,F:4,H:4,V:4,W:4,Y:4,K:5,J:8,X:8,Q:10,Z:10};
+  const group = document.getElementById('tileGroup');
+  group.innerHTML = '';
+  for(const ch of word){
+    const tile = document.createElement('div');
+    tile.className = 'tile';
+    tile.id = 'tile-'+group.children.length;
+    tile.innerHTML = ch + '<span class="pv">'+(pts[ch]||1)+'</span>';
+    group.appendChild(tile);
+  }
+}
+
+function updateProgressUI(){
+  document.getElementById('progressLabel').textContent = `${game.totalAnswers}/${game.total}`;
+  document.getElementById('progressFill').style.width = Math.round(100*game.totalAnswers/game.total)+'%';
+  document.getElementById('liveScore').textContent = game.correctFirstTry;
+  document.getElementById('liveAttempted').textContent = game.totalAnswers;
+}
+
+function nextQuestion(){
+  if(game.advanceTimer){ clearTimeout(game.advanceTimer); game.advanceTimer=null; }
+  const banner = document.getElementById('feedbackBanner');
+  banner.className = 'feedback-banner';
+  document.getElementById('nextBtn').style.display = 'none';
+  document.getElementById('answerRow').style.display = 'flex';
+  document.getElementById('btnValid').disabled = false;
+  document.getElementById('btnInvalid').disabled = false;
+
+  if(game.queue.length === 0){
+    finishRound();
+    return;
+  }
+  game.current = game.queue.shift();
+  renderTiles(game.current.word);
+  updateProgressUI();
+}
+
+function advanceNow(){
+  const banner = document.getElementById('feedbackBanner');
+  banner.removeEventListener('click', advanceNow);
+  if(game.advanceTimer){ clearTimeout(game.advanceTimer); game.advanceTimer=null; }
+  nextQuestion();
+}
+
+function answer(userSaysValid){
+  if(!game.current) return;
+  document.getElementById('btnValid').disabled = true;
+  document.getElementById('btnInvalid').disabled = true;
+
+  const q = game.current;
+  const correct = (userSaysValid === q.isValid);
+  q.attempts++;
+  game.totalAnswers++;
+
+  const tiles = document.querySelectorAll('#tileGroup .tile');
+  tiles.forEach(t=>t.classList.add(correct?'flash-good':'flash-bad'));
+
+  // Prominent feedback banner, placed above the tiles (word stays fully visible)
+  const banner = document.getElementById('feedbackBanner');
+  document.getElementById('fbIcon').textContent = correct ? '✓' : '✕';
+  document.getElementById('fbText').textContent = correct ? 'Correct!' : (q.isValid ? q.word + ' IS a word' : q.word + ' is NOT a word');
+  banner.className = 'feedback-banner show ' + (correct ? 'good' : 'bad');
+  banner.addEventListener('click', advanceNow, {once:true});
+
+  if(correct){
+    if(q.attempts === 1) game.correctFirstTry++;
+    game.cleared.push(q.word);
+    updateWordStat(q.word, true);
+  } else {
+    q.everMissed = true;
+    game.missed[q.word] = { isValid: q.isValid, count: (game.missed[q.word]?.count||0)+1 };
+    updateWordStat(q.word, false);
+    // Recycle the missed word back into this same round (3-6 questions later) but
+    // keep the round's total question count fixed: displace one not-yet-seen word
+    // rather than extending the round. Pop first, then insert, so we never remove
+    // the word we're re-queuing.
+    if(game.queue.length > 0){ game.queue.pop(); }
+    const insertAt = Math.min(game.queue.length, 3 + Math.floor(Math.random()*4));
+    game.queue.splice(insertAt, 0, {...q, attempts:q.attempts});
+  }
+
+  logPlayedWord(q.word, q.isValid, correct);
+  updateProgressUI();
+  document.getElementById('answerRow').style.display = 'none';
+  document.getElementById('nextBtn').style.display = 'block';
+
+  // Auto-advance quickly; tapping the banner or Next button skips the wait
+  game.advanceTimer = setTimeout(advanceNow, correct ? 550 : 900);
+}
+
+function logPlayedWord(word, isValid, wasCorrect){
+  game.log.push({word, isValid, wasCorrect});
+  document.getElementById('playedCount').textContent = game.log.length;
+  const list = document.getElementById('playedList');
+  const row = document.createElement('div');
+  row.className = 'played-row';
+  row.innerHTML = `<span class="pw">${word}</span>
+    <span class="pw-badges">
+      <span class="pw-badge ${isValid?'valid':'invalid'}">${isValid?'WORD':'NOT WORD'}</span>
+      <span class="pw-icon ${wasCorrect?'correct':'wrong'}">${wasCorrect?'✓':'✕'}</span>
+    </span>`;
+  if(list.querySelector('.played-empty')) list.innerHTML = '';
+  list.insertBefore(row, list.firstChild);
+}
+
+function updateWordStat(word, wasCorrect){
+  if(!progress.wordStats[word]) progress.wordStats[word] = {wrong:0, right:0};
+  if(wasCorrect) progress.wordStats[word].right++;
+  else progress.wordStats[word].wrong++;
+}
+
+function finishRound(){
+  progress.rounds++;
+  const acc = Math.round(100*game.correctFirstTry/game.total);
+  progress.totalAccuracySum += acc;
+  saveProgress();
+  renderLifetimeStats();
+
+  document.getElementById('summaryPct').textContent = acc+'%';
+  const distinctWords = new Set(game.log.map(e=>e.word)).size;
+  document.getElementById('summaryWords').textContent = distinctWords;
+  document.getElementById('summaryAttempts').textContent = game.totalAnswers;
+  const missedWords = Object.keys(game.missed);
+  document.getElementById('summaryMissed').textContent = missedWords.length;
+
+  const missList = document.getElementById('missList');
+  missList.innerHTML = '';
+  if(missedWords.length===0){
+    missList.innerHTML = '<div style="text-align:center;color:var(--muted);padding:20px;">Perfect round — nothing missed! 🎉</div>';
+  } else {
+    missedWords.forEach(w=>{
+      const info = game.missed[w];
+      const row = document.createElement('div');
+      row.className = 'miss-item';
+      row.innerHTML = `<span class="w">${w}</span>
+        <span><span class="badge ${info.isValid?'valid':'invalid'}">${info.isValid?'VALID':'NOT VALID'}</span>
+        <span class="tries">missed ${info.count}x</span></span>`;
+      missList.appendChild(row);
+    });
+  }
+  showScreen('screen-summary');
+}
+
+document.getElementById('startBtn').addEventListener('click', ()=>{
+  const dict = getSelected('dict');
+  const lenMode = getSelected('len');
+  const size = Number(getSelected('round'));
+  startRound(size, dict, lenMode, null);
+});
+
+document.getElementById('reviewMissedBtn').addEventListener('click', ()=>{
+  const dict = getSelected('dict');
+  const missedWords = Object.keys(progress.wordStats).filter(w=>progress.wordStats[w].wrong>0);
+  const preset = missedWords.map(w=>({
+    word: w,
+    isValid: DICT[dict][w.length] ? DICT[dict][w.length].has(w) : DICT.TWL[w.length].has(w),
+    len: w.length
+  }));
+  if(preset.length===0) return;
+  startRound(preset.length, dict, 'both', shuffle(preset));
+});
+
+document.getElementById('btnValid').addEventListener('click', ()=>answer(true));
+document.getElementById('btnInvalid').addEventListener('click', ()=>answer(false));
+document.getElementById('nextBtn').addEventListener('click', advanceNow);
+document.getElementById('quitLink').addEventListener('click', ()=>{
+  if(game && game.cleared.length>0){ finishRound(); }
+  else { showScreen('screen-setup'); }
+});
+document.getElementById('practiceMissedBtn').addEventListener('click', ()=>{
+  const missedWords = Object.keys(game.missed);
+  if(missedWords.length===0){ showScreen('screen-setup'); return; }
+  const preset = missedWords.map(w=>({word:w, isValid:game.missed[w].isValid, len:w.length}));
+  startRound(preset.length, game.dict, game.lenMode, shuffle(preset));
+});
+document.getElementById('newRoundBtn').addEventListener('click', ()=>showScreen('screen-setup'));
+
+/* =====================================================
+   WORD LIST BROWSER
+===================================================== */
+function renderWordList(){
+  const dict = getSelected('wldict');
+  const len = Number(getSelected('wllen'));
+  const search = document.getElementById('wlSearch').value.trim().toUpperCase();
+  let words = wordList(dict, len);
+  if(search){
+    words = words.filter(w=>w.includes(search));
+  }
+  document.getElementById('wlCount').textContent = `${words.length} word${words.length===1?'':'s'}`;
+  const grid = document.getElementById('wlGrid');
+  grid.innerHTML = '';
+  const frag = document.createDocumentFragment();
+  words.forEach(w=>{
+    const el = document.createElement('div');
+    el.className = 'wl-word';
+    el.textContent = w;
+    frag.appendChild(el);
+  });
+  grid.appendChild(frag);
+}
+['wldict','wllen'].forEach(g=>{
+  document.querySelectorAll(`[data-group="${g}"]`).forEach(b=>b.addEventListener('click', renderWordList));
+});
+document.getElementById('wlSearch').addEventListener('input', renderWordList);
+
+/* =====================================================
+   LOOKUP TOOL
+   2-3 letter words: checked exactly against our compiled
+   TWL/SOWPODS lists.
+   4+ letter words: we don't have a full-length Scrabble
+   dictionary embedded, so we check against a live general
+   English dictionary as a best-effort signal and label it
+   clearly as such (it isn't official Scrabble validation —
+   e.g. it can miss valid Scrabble-only words and won't
+   filter out proper-noun-like entries the way TWL/SOWPODS
+   would).
+===================================================== */
+let lookupHistory = [];
+
+async function doLookup(){
+  const dict = getSelected('lkdict');
+  const raw = document.getElementById('lookupInput').value.trim().toUpperCase();
+  if(!raw || !/^[A-Z]{1,}$/.test(raw)) return;
+
+  const resEl = document.getElementById('lookupResult');
+  const verdict = document.getElementById('lookupVerdict');
+  const dictInfo = document.getElementById('lookupDictInfo');
+  document.getElementById('lookupWord').textContent = raw;
+
+  if(raw.length===2 || raw.length===3){
+    const isValid = DICT[dict][raw.length].has(raw);
+    resEl.className = 'lookup-result show ' + (isValid?'yes':'no');
+    verdict.textContent = isValid ? '✓ Valid word' : '✕ Not a valid word';
+    verdict.className = 'verdict ' + (isValid?'yes-text':'no-text');
+    dictInfo.textContent = `Checked against ${dict}`;
+    recordLookup(raw, isValid, dict);
+    return;
+  }
+
+  // 4+ letters (or 1 letter): no local Scrabble list for this length, so do a
+  // best-effort live dictionary check.
+  resEl.className = 'lookup-result show';
+  verdict.textContent = 'Checking…';
+  verdict.className = 'verdict';
+  dictInfo.textContent = '';
+  try{
+    const res = await fetch('https://api.dictionaryapi.dev/api/v2/entries/en/'+encodeURIComponent(raw.toLowerCase()));
+    const isValid = res.ok;
+    resEl.className = 'lookup-result show ' + (isValid?'yes':'no');
+    verdict.textContent = isValid ? '✓ Found in general English dictionary' : '✕ Not found in general English dictionary';
+    verdict.className = 'verdict ' + (isValid?'yes-text':'no-text');
+    dictInfo.textContent = `${raw.length}-letter words aren't in our ${dict} list yet — this is a general dictionary check, not official Scrabble validation.`;
+    recordLookup(raw, isValid, dict, true);
+  }catch(e){
+    resEl.className = 'lookup-result show';
+    verdict.textContent = "Couldn't reach the dictionary service";
+    verdict.className = 'verdict';
+    dictInfo.textContent = 'Check your connection and try again.';
+  }
+}
+
+function recordLookup(word, isValid, dict, general){
+  lookupHistory.unshift({word, isValid, dict, general});
+  lookupHistory = lookupHistory.slice(0,8);
+  renderLookupHistory();
+}
+
+function renderLookupHistory(){
+  const card = document.getElementById('lookupHistoryCard');
+  if(lookupHistory.length===0){ card.style.display='none'; return; }
+  card.style.display='block';
+  const list = document.getElementById('lookupHistoryList');
+  list.innerHTML = '';
+  lookupHistory.forEach(h=>{
+    const row = document.createElement('div');
+    row.className = 'hist-item';
+    row.innerHTML = `<span>${h.word} <span style="color:var(--muted);font-size:11px;">(${h.general? 'general dict':h.dict})</span></span><span style="color:${h.isValid?'#8fe0ae':'#f0a08c'};font-weight:700;">${h.isValid?'VALID':'NOT VALID'}</span>`;
+    list.appendChild(row);
+  });
+}
+document.getElementById('lookupBtn').addEventListener('click', doLookup);
+document.getElementById('lookupInput').addEventListener('keydown', e=>{ if(e.key==='Enter') doLookup(); });
+document.getElementById('lookupInput').addEventListener('input', e=>{ e.target.value = e.target.value.toUpperCase(); });
+
+/* =====================================================
+   ANAGRAM TOOL
+===================================================== */
+function lettersMultiset(s){
+  const m = {};
+  for(const c of s){ m[c]=(m[c]||0)+1; }
+  return m;
+}
+function canFormFrom(word, avail){
+  const need = lettersMultiset(word);
+  for(const k in need){ if((avail[k]||0) < need[k]) return false; }
+  return true;
+}
+function doAnagram(){
+  const dict = getSelected('agdict');
+  const raw = document.getElementById('anagramInput').value.trim().toUpperCase();
+  const resultsEl = document.getElementById('anagramResults');
+  resultsEl.innerHTML = '';
+  if(!raw || !/^[A-Z]{2,3}$/.test(raw)){
+    resultsEl.innerHTML = '<div class="anagram-empty">Enter 2 or 3 letters to search.</div>';
+    return;
+  }
+  const avail = lettersMultiset(raw);
+  const found2 = wordList(dict,2).filter(w=>canFormFrom(w,avail));
+  const found3 = wordList(dict,3).filter(w=>canFormFrom(w,avail));
+
+  if(found2.length===0 && found3.length===0){
+    resultsEl.innerHTML = '<div class="anagram-empty">No valid 2 or 3 letter words found in those letters.</div>';
+    return;
+  }
+  if(found2.length){
+    const g = document.createElement('div');
+    g.className='anagram-group';
+    g.innerHTML = `<h4>2-letter (${found2.length})</h4>`;
+    const grid = document.createElement('div');
+    grid.className='wl-grid';
+    found2.forEach(w=>{ const el=document.createElement('div'); el.className='wl-word'; el.textContent=w; grid.appendChild(el); });
+    g.appendChild(grid);
+    resultsEl.appendChild(g);
+  }
+  if(found3.length){
+    const g = document.createElement('div');
+    g.className='anagram-group';
+    g.innerHTML = `<h4>3-letter (${found3.length})</h4>`;
+    const grid = document.createElement('div');
+    grid.className='wl-grid';
+    found3.forEach(w=>{ const el=document.createElement('div'); el.className='wl-word'; el.textContent=w; grid.appendChild(el); });
+    g.appendChild(grid);
+    resultsEl.appendChild(g);
+  }
+}
+document.getElementById('anagramBtn').addEventListener('click', doAnagram);
+document.getElementById('anagramInput').addEventListener('input', e=>{ e.target.value = e.target.value.toUpperCase(); });
+document.getElementById('anagramInput').addEventListener('keydown', e=>{ if(e.key==='Enter') doAnagram(); });
+
+/* Init */
+renderWordList();
+loadProgress();
+</script>
+</body>
+</html>
