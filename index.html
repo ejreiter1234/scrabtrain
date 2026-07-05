@@ -1,4 +1,4 @@
-<!-- v1.18 | Last updated: 2026-07-04 -->
+<!-- v1.24 | Last updated: 2026-07-04 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -87,15 +87,27 @@ nav.tabs button.active{background:var(--tile);color:var(--board-dark);}
 .dict-banner{text-align:center;font-size:12px;color:var(--muted);margin-bottom:10px;}
 .dict-banner #dictBadge{font-size:11px;font-weight:800;letter-spacing:0.5px;padding:3px 10px;border-radius:20px;background:var(--accent);color:var(--board-dark);margin-left:4px;}
 
-.score-row{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted);margin-bottom:6px;}
-.score-row b{color:var(--tile);}
+.scoreboard{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:4px;
+  background:rgba(0,0,0,0.22);border:1.5px solid rgba(212,162,76,0.35);border-radius:14px;
+  padding:12px 4px;margin-bottom:10px;
+}
+.sb-cell{text-align:center;min-width:0;}
+.sb-cell-primary{background:rgba(212,162,76,0.1);border-radius:10px;padding:2px 0;}
+.sb-val{font-family:Georgia,serif;font-weight:700;font-size:19px;color:var(--tile);line-height:1;white-space:nowrap;}
+.sb-score-val{font-size:26px;color:#fff;}
+.sb-val .sb-sub{font-size:12px;color:var(--muted);font-weight:400;}
+.sb-score-val .sb-sub{font-size:14px;}
+.sb-label{font-size:8.5px;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin-top:4px;}
+.sb-cell-primary .sb-label{color:var(--accent);font-weight:700;}
+.sb-streak{color:var(--accent);}
+.sb-best{color:var(--accent);}
+.sb-lives{font-size:15px;letter-spacing:1px;color:var(--bad);}
 
-.progress-wrap{margin-bottom:14px;}
+.progress-wrap{margin-bottom:4px;}
 .progress-bar{height:6px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden;}
 .progress-fill{height:100%;background:var(--accent);border-radius:3px;transition:width .3s;}
-
-.lives-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;font-size:13px;color:var(--muted);}
-.lives-row b{color:var(--accent);}
+.progress-caption{text-align:center;font-size:11px;color:var(--muted);margin-bottom:10px;}
 #livesHearts{font-size:16px;letter-spacing:3px;color:var(--bad);}
 
 .tile-stage{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;min-height:130px;gap:8px;margin-top:6px;}
@@ -220,6 +232,16 @@ nav.tabs button.active{background:var(--tile);color:var(--board-dark);}
 .anagram-empty{text-align:center;color:var(--muted);font-size:13px;padding:30px 10px;}
 
 .small-note{font-size:11.5px;color:var(--muted);line-height:1.5;margin-top:4px;}
+
+.best-score-callout{
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  background:rgba(212,162,76,0.14);border:1.5px solid rgba(212,162,76,0.45);
+  border-radius:14px;padding:12px 10px;margin-bottom:14px;
+}
+.best-score-callout .bsc-icon{font-size:26px;}
+.best-score-callout .bsc-num{font-family:Georgia,serif;font-weight:700;font-size:28px;color:var(--accent);line-height:1;}
+.best-score-callout .bsc-label{font-size:12px;color:var(--tile);font-weight:600;text-align:left;}
+.best-score-callout .bsc-label small{display:block;font-size:10.5px;color:var(--muted);font-weight:400;margin-top:1px;}
 .app-version{text-align:center;font-size:11px;color:var(--muted);opacity:0.6;margin:20px 0 4px;}
 
 .dict-pill{
@@ -240,6 +262,7 @@ nav.tabs button.active{background:var(--tile);color:var(--board-dark);}
     <button class="tab-btn" data-tab="wordlist">Word List</button>
     <button class="tab-btn" data-tab="lookup">Lookup</button>
     <button class="tab-btn" data-tab="anagram">Anagram</button>
+    <button class="tab-btn" data-tab="missed">Missed</button>
   </nav>
 
   <!-- PLAY TAB: contains setup, playing, summary sub-screens -->
@@ -262,7 +285,7 @@ nav.tabs button.active{background:var(--tile);color:var(--board-dark);}
             <div class="opt-btn" data-group="len" data-val="both">Both</div>
           </div>
         </div>
-        <p class="small-note" id="infiniteBestNote"></p>
+        <div class="best-score-callout" id="infiniteBestNote"></div>
         <button class="big-btn" id="startBtn">Start</button>
       </div>
 
@@ -275,23 +298,36 @@ nav.tabs button.active{background:var(--tile);color:var(--board-dark);}
         <button class="big-btn secondary" id="reviewMissedBtn" style="margin-top:14px;display:none;">Review My Missed Words</button>
       </div>
 
-      <div class="app-version">v1.18</div>
+      <div class="app-version">v1.24</div>
 
     </div>
 
     <div class="screen" id="screen-playing">
       <div class="dict-banner">Dictionary: <span id="dictBadge">TWL</span></div>
-      <div class="score-row">
-        <span>Score: <b id="liveScore">0</b>/<span id="liveAttempted">0</span></span>
-        <span id="progressLabel">0/50</span>
+
+      <div class="scoreboard">
+        <div class="sb-cell sb-cell-primary">
+          <div class="sb-val sb-score-val"><span id="liveScore">0</span><span class="sb-sub">/<span id="liveAttempted">0</span></span></div>
+          <div class="sb-label">Score</div>
+        </div>
+        <div class="sb-cell">
+          <div class="sb-val sb-streak">🔥<span id="streakCount">0</span></div>
+          <div class="sb-label">Streak</div>
+        </div>
+        <div class="sb-cell">
+          <div class="sb-val sb-best">🏆<span id="highScoreDisplay">0</span></div>
+          <div class="sb-label">High Score</div>
+        </div>
+        <div class="sb-cell" id="livesCell">
+          <div class="sb-val sb-lives" id="livesHearts">♥♥♥</div>
+          <div class="sb-label">Lives</div>
+        </div>
       </div>
+
       <div class="progress-wrap" id="progressWrap">
         <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
       </div>
-      <div class="lives-row" id="livesRow" style="display:none;">
-        <span id="livesHearts">♥♥♥</span>
-        <span>Best: <b id="highScoreDisplay">0</b></span>
-      </div>
+      <div class="progress-caption" id="progressLabel">0/50</div>
 
       <div class="tile-stage">
         <div class="feedback-banner" id="feedbackBanner">
@@ -416,6 +452,21 @@ nav.tabs button.active{background:var(--tile);color:var(--board-dark);}
       <p class="small-note">Shows every valid 2 and 3-letter word that can be made from the letters you enter (using each letter at most as many times as you typed it).</p>
     </div>
     <div class="anagram-results" id="anagramResults"></div>
+  </div>
+
+  <!-- MISSED WORDS TAB -->
+  <div class="screen" id="tab-missed">
+    <div class="card">
+      <label class="group-label">Dictionary (for validity check)</label>
+      <div class="opt-row">
+        <div class="opt-btn" data-group="msdict" data-val="TWL">TWL</div>
+        <div class="opt-btn selected" data-group="msdict" data-val="SOWPODS">SOWPODS</div>
+      </div>
+      <button class="big-btn" id="practiceMissedFromTabBtn">Practice My Missed Words</button>
+      <p class="small-note">A running local record of every word you've ever gotten wrong, with how many times you've missed it and gotten it right since. Sorted worst-first. Stored on this device only.</p>
+    </div>
+    <div class="wl-count" id="missedTabCount"></div>
+    <div class="card" id="missedTabList" style="padding:6px 10px;"></div>
   </div>
 
 </div>
@@ -547,6 +598,7 @@ function loadProgress(){
   if(!progress.infiniteHighScores) progress.infiniteHighScores = {};
   renderLifetimeStats();
   updateInfiniteBestNote();
+  renderMissedWordsTab();
 }
 function saveProgress(){
   try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)); }catch(e){ /* storage full or blocked */ }
@@ -572,8 +624,9 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
   btn.addEventListener('click', ()=>{
     document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
-    document.querySelectorAll('#tab-play, #tab-wordlist, #tab-lookup, #tab-anagram').forEach(s=>s.classList.remove('active'));
+    document.querySelectorAll('#tab-play, #tab-wordlist, #tab-lookup, #tab-anagram, #tab-missed').forEach(s=>s.classList.remove('active'));
     document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
+    if(btn.dataset.tab === 'missed') renderMissedWordsTab();
   });
 });
 
@@ -597,7 +650,9 @@ function updateInfiniteBestNote(){
   const lenMode = getSelected('len');
   const best = progress.infiniteHighScores[highScoreKey(dict, lenMode)] || 0;
   const lenLabel = lenMode==='both' ? '2 & 3-letter' : lenMode+'-letter';
-  note.textContent = `Your best for ${dict} · ${lenLabel}: ${best} correct`;
+  note.innerHTML = `<span class="bsc-icon">🏆</span>
+    <span class="bsc-num">${best}</span>
+    <span class="bsc-label">Best score<small>${dict} · ${lenLabel}</small></span>`;
 }
 ['dict','len'].forEach(g=>{
   document.querySelectorAll(`[data-group="${g}"]`).forEach(b=>b.addEventListener('click', updateInfiniteBestNote));
@@ -606,6 +661,8 @@ wireOptGroup(document, 'wldict');
 wireOptGroup(document, 'wllen');
 wireOptGroup(document, 'lkdict');
 wireOptGroup(document, 'agdict');
+wireOptGroup(document, 'msdict');
+document.querySelectorAll('[data-group="msdict"]').forEach(b=>b.addEventListener('click', renderMissedWordsTab));
 
 function getSelected(groupName){
   return document.querySelector(`[data-group="${groupName}"].selected`).dataset.val;
@@ -671,6 +728,7 @@ function startRound(size, dict, lenMode, presetWords, fullCoverage, infinite){
     missed: {}, // word -> {isValid, count}
     log: [], // running list of every answer given this round
     correctFirstTry: 0,
+    streak: 0,
     totalAnswers: 0,
     current: null,
     awaitingNext: false,
@@ -684,7 +742,7 @@ function startRound(size, dict, lenMode, presetWords, fullCoverage, infinite){
   document.getElementById('playedCol3').innerHTML = '';
   document.getElementById('playedCount').textContent = '0';
   document.getElementById('progressWrap').style.display = infinite ? 'none' : 'block';
-  document.getElementById('livesRow').style.display = infinite ? 'flex' : 'none';
+  document.getElementById('livesCell').style.display = infinite ? 'block' : 'none';
   if(infinite){
     renderLives();
     document.getElementById('highScoreDisplay').textContent = progress.infiniteHighScores[highScoreKey(dict, lenMode)] || 0;
@@ -718,6 +776,7 @@ function renderTiles(word){
 function updateProgressUI(){
   document.getElementById('liveScore').textContent = game.correctFirstTry;
   document.getElementById('liveAttempted').textContent = game.totalAnswers;
+  document.getElementById('streakCount').textContent = game.streak;
   if(game.infinite){
     document.getElementById('progressLabel').textContent = '∞';
     renderLives();
@@ -804,34 +863,36 @@ function answer(userSaysValid){
     game.cleared.push(q.word);
     updateWordStat(q.word, true);
     if(game.infinite) game.score++;
+    game.streak++;
   } else {
     q.everMissed = true;
     game.missed[q.word] = { isValid: q.isValid, count: (game.missed[q.word]?.count||0)+1 };
     updateWordStat(q.word, false);
+    game.streak = 0;
     if(game.infinite){
       game.lives--;
       game.livesLostLog.push({word:q.word, isValid:q.isValid, userSaid:userSaysValid, order:3-game.lives});
       if(q.isValid){
         // Missed valid words get a repeat chance soon, breaking the
         // otherwise-no-repeat rule for the shuffled bag.
-        const insertAt = Math.min(game.pool.validBag.length, 2 + Math.floor(Math.random()*3));
+        const insertAt = Math.min(game.pool.validBag.length, 5 + Math.floor(Math.random()*4));
         game.pool.validBag.splice(insertAt, 0, {word:q.word, isValid:true, len:q.len});
       } else {
-        const insertAt = Math.min(game.pool.invalidBag.length, 2 + Math.floor(Math.random()*3));
+        const insertAt = Math.min(game.pool.invalidBag.length, 5 + Math.floor(Math.random()*4));
         game.pool.invalidBag.splice(insertAt, 0, {word:q.word, isValid:false, len:q.len});
       }
     } else if(game.fullCoverage){
       // Full-coverage rounds must show every word at least once, so a miss
       // simply adds a repeat later — nothing gets displaced or dropped.
-      const insertAt = Math.min(game.queue.length, 3 + Math.floor(Math.random()*4));
+      const insertAt = Math.min(game.queue.length, 6 + Math.floor(Math.random()*5));
       game.queue.splice(insertAt, 0, {...q, attempts:q.attempts});
     } else {
-      // Recycle the missed word back into this same round (3-6 questions later) but
+      // Recycle the missed word back into this same round (6-10 questions later) but
       // keep the round's total question count fixed: displace one not-yet-seen word
       // rather than extending the round. Pop first, then insert, so we never remove
       // the word we're re-queuing.
       if(game.queue.length > 0){ game.queue.pop(); }
-      const insertAt = Math.min(game.queue.length, 3 + Math.floor(Math.random()*4));
+      const insertAt = Math.min(game.queue.length, 6 + Math.floor(Math.random()*5));
       game.queue.splice(insertAt, 0, {...q, attempts:q.attempts});
     }
   }
@@ -1340,6 +1401,57 @@ function doAnagram(){
 document.getElementById('anagramBtn').addEventListener('click', doAnagram);
 document.getElementById('anagramInput').addEventListener('input', e=>{ e.target.value = e.target.value.toUpperCase(); });
 document.getElementById('anagramInput').addEventListener('keydown', e=>{ if(e.key==='Enter') doAnagram(); });
+
+/* =====================================================
+   MISSED WORDS TAB
+   A running local record (via progress.wordStats, saved to
+   localStorage) of every word ever missed, with wrong/right
+   counts, sorted worst-first. Practice button starts a
+   focused round using just this list.
+===================================================== */
+function renderMissedWordsTab(){
+  const dict = getSelected('msdict');
+  const list = document.getElementById('missedTabList');
+  const countEl = document.getElementById('missedTabCount');
+
+  const missedWords = Object.keys(progress.wordStats)
+    .filter(w => progress.wordStats[w].wrong > 0)
+    .sort((a,b) => progress.wordStats[b].wrong - progress.wordStats[a].wrong);
+
+  countEl.textContent = `${missedWords.length} word${missedWords.length===1?'':'s'} missed at least once`;
+
+  if(missedWords.length === 0){
+    list.innerHTML = '<div style="text-align:center;color:var(--muted);padding:20px;">No missed words yet — nice! Play a round and anything you miss will show up here.</div>';
+    return;
+  }
+
+  list.innerHTML = missedWords.map(w=>{
+    const stat = progress.wordStats[w];
+    const isValid = DICT[dict][w.length] ? DICT[dict][w.length].has(w) : DICT.TWL[w.length].has(w);
+    return `<div class="miss-item">
+      <span class="w">${w}</span>
+      <span><span class="badge ${isValid?'valid':'invalid'}">${isValid?'VALID':'NOT VALID'}</span>
+      <span class="tries">missed ${stat.wrong}x · got it right ${stat.right}x</span></span>
+    </div>`;
+  }).join('');
+}
+
+document.getElementById('practiceMissedFromTabBtn').addEventListener('click', ()=>{
+  const dict = getSelected('msdict');
+  const missedWords = Object.keys(progress.wordStats).filter(w=>progress.wordStats[w].wrong>0);
+  if(missedWords.length===0) return;
+  const preset = missedWords.map(w=>({
+    word: w,
+    isValid: DICT[dict][w.length] ? DICT[dict][w.length].has(w) : DICT.TWL[w.length].has(w),
+    len: w.length
+  }));
+  startRound(preset.length, dict, 'both', shuffle(preset));
+  // Switch the visible tab to Play so the round is actually visible
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelector('[data-tab="play"]').classList.add('active');
+  document.querySelectorAll('#tab-play, #tab-wordlist, #tab-lookup, #tab-anagram, #tab-missed').forEach(s=>s.classList.remove('active'));
+  document.getElementById('tab-play').classList.add('active');
+});
 
 /* Init */
 renderWordList();
