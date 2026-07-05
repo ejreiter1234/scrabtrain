@@ -1,4 +1,4 @@
-<!-- v1.28 | Last updated: 2026-07-04 -->
+<!-- v1.34 | Last updated: 2026-07-04 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -39,6 +39,7 @@ h1,h2,h3{font-family:Georgia,'Times New Roman',serif;margin:0;}
 header.top{padding:18px 0 10px;text-align:center;}
 header.top h1{font-size:18px;letter-spacing:0.3px;color:var(--tile);line-height:1.3;}
 header.top .sub{font-size:12px;color:var(--muted);margin-top:2px;}
+.header-version{font-size:10px;color:var(--muted);opacity:0.55;margin-left:6px;}
 
 nav.tabs{display:flex;gap:6px;margin:10px 0 16px;background:rgba(0,0,0,0.2);border-radius:12px;padding:4px;}
 nav.tabs button{
@@ -75,7 +76,11 @@ nav.tabs button.active{background:var(--tile);color:var(--board-dark);}
 }
 .big-btn:active{transform:translateY(3px);box-shadow:0 1px 0 #a87c2d;}
 .big-btn.secondary{background:rgba(255,255,255,0.1);color:var(--tile);box-shadow:0 4px 0 rgba(0,0,0,0.25);}
-.big-btn.share{background:#3a6b7a;color:#fff;box-shadow:0 4px 0 #244a55;}
+.share-pill{
+  display:block;margin:10px auto 0;padding:7px 16px;border-radius:20px;border:none;
+  background:#3a6b7a;color:#fff;font-size:12px;font-weight:700;cursor:pointer;
+}
+.share-pill:active{opacity:0.85;}
 
 .stats-mini{display:flex;justify-content:space-around;text-align:center;}
 .stats-mini div{flex:1;}
@@ -150,6 +155,8 @@ nav.tabs button.active{background:var(--tile);color:var(--board-dark);}
 .next-btn{margin-top:14px;}
 
 .quit-btn{margin-top:16px;padding:12px;font-size:14px;background:rgba(192,83,62,0.14);border:1.5px solid rgba(192,83,62,0.4);color:#f0a08c;box-shadow:none;}
+
+#resetMissedBtn.confirming{background:var(--bad);color:#fff;border-color:var(--bad);font-weight:700;}
 .quit-btn:active{transform:translateY(2px);}
 
 .played-section{margin-top:18px;}
@@ -206,11 +213,11 @@ nav.tabs button.active{background:var(--tile);color:var(--board-dark);}
 .pyr-bar.invalid{background:#c0533e;}
 .pyramid-empty{text-align:center;color:var(--muted);font-size:13px;padding:24px 10px;}
 
-.life-lost-item{display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid rgba(255,255,255,0.06);}
+.life-lost-item{display:flex;align-items:center;gap:6px;padding:5px 4px;border-bottom:1px solid rgba(255,255,255,0.06);}
 .life-lost-item:last-child{border-bottom:none;}
-.life-lost-item .heart-num{font-size:18px;flex:none;}
-.life-lost-item .llw{font-family:Georgia,serif;font-weight:700;font-size:16px;letter-spacing:0.5px;flex:none;min-width:40px;}
-.life-lost-item .lld{font-size:12px;color:var(--muted);}
+.life-lost-item .heart-num{font-size:13px;flex:none;}
+.life-lost-item .llw{font-family:Georgia,serif;font-weight:700;font-size:13px;letter-spacing:0.5px;flex:none;min-width:30px;}
+.life-lost-item .lld{font-size:10.5px;color:var(--muted);}
 
 /* Word list browser */
 .wl-controls{display:flex;gap:8px;margin-bottom:12px;}
@@ -250,15 +257,15 @@ nav.tabs button.active{background:var(--tile);color:var(--board-dark);}
 .small-note{font-size:11.5px;color:var(--muted);line-height:1.5;margin-top:4px;}
 
 .best-score-callout{
-  display:flex;align-items:center;justify-content:center;gap:10px;
+  display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;
   background:rgba(212,162,76,0.14);border:1.5px solid rgba(212,162,76,0.45);
-  border-radius:14px;padding:12px 10px;margin-bottom:14px;
+  border-radius:14px;padding:12px 8px;margin-bottom:14px;
 }
-.best-score-callout .bsc-icon{font-size:26px;}
-.best-score-callout .bsc-num{font-family:Georgia,serif;font-weight:700;font-size:28px;color:var(--accent);line-height:1;}
-.best-score-callout .bsc-label{font-size:12px;color:var(--tile);font-weight:600;text-align:left;}
-.best-score-callout .bsc-label small{display:block;font-size:10.5px;color:var(--muted);font-weight:400;margin-top:1px;}
-.app-version{text-align:center;font-size:11px;color:var(--muted);opacity:0.6;margin:20px 0 4px;}
+.best-score-callout .bsc-icon{font-size:20px;}
+.best-score-callout .bsc-num{font-family:Georgia,serif;font-weight:700;font-size:22px;color:var(--accent);line-height:1;}
+.best-score-callout .bsc-label{font-size:11px;color:var(--tile);font-weight:600;text-align:left;}
+.best-score-callout .bsc-label small{display:block;font-size:10px;color:var(--muted);font-weight:400;margin-top:1px;}
+.best-score-callout .bsc-divider{width:1px;align-self:stretch;background:rgba(212,162,76,0.35);margin:0 2px;}
 
 .dict-pill{
   display:inline-block;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;
@@ -270,7 +277,7 @@ nav.tabs button.active{background:var(--tile);color:var(--board-dark);}
 <div class="app">
   <header class="top">
     <h1>🀫 Eric's Scrabble 2/3 Letter Word Trainer</h1>
-    <div class="sub">2s &amp; 3s word validity practice</div>
+    <div class="sub">2s &amp; 3s word validity practice <span class="header-version" id="headerVersion">v1.34</span></div>
   </header>
 
   <nav class="tabs">
@@ -314,8 +321,6 @@ nav.tabs button.active{background:var(--tile);color:var(--board-dark);}
         <button class="big-btn secondary" id="reviewMissedBtn" style="margin-top:14px;display:none;">Review My Missed Words</button>
       </div>
 
-      <div class="app-version">v1.28</div>
-
     </div>
 
     <div class="screen" id="screen-playing">
@@ -327,7 +332,7 @@ nav.tabs button.active{background:var(--tile);color:var(--board-dark);}
           <div class="sb-label">Score</div>
         </div>
         <div class="sb-cell">
-          <div class="sb-val sb-streak">🔥<span id="streakCount">0</span></div>
+          <div class="sb-val sb-streak">🔥<span id="streakCount">0</span><span class="sb-sub">best <span id="bestStreakDisplay">0</span></span></div>
           <div class="sb-label">Streak</div>
         </div>
         <div class="sb-cell">
@@ -387,9 +392,8 @@ nav.tabs button.active{background:var(--tile);color:var(--board-dark);}
           <div><div class="n" id="summaryAttempts">0</div><div class="l" id="summaryLabel2">Round Size</div></div>
           <div><div class="n" id="summaryMissed">0</div><div class="l" id="summaryLabel3">Missed</div></div>
         </div>
+        <button class="share-pill" id="shareScoreBtn">📤 Share Score</button>
       </div>
-
-      <button class="big-btn share" id="shareScoreBtn">📤 Share Score</button>
 
       <div id="livesLostSection" style="display:none;">
         <h3 style="margin:6px 0 10px;font-size:15px;">How you lost your lives</h3>
@@ -403,8 +407,10 @@ nav.tabs button.active{background:var(--tile);color:var(--board-dark);}
         <div class="played-col" id="summaryCol3"></div>
       </div>
 
-      <h3 style="margin:14px 0 10px;font-size:15px;">Words you missed</h3>
-      <div class="card miss-list" id="missList"></div>
+      <div id="missedWordsSection">
+        <h3 style="margin:14px 0 10px;font-size:15px;">Words you missed</h3>
+        <div class="card miss-list" id="missList"></div>
+      </div>
 
       <button class="big-btn" id="practiceMissedBtn">Practice These Again</button>
       <button class="big-btn secondary" id="newRoundBtn">New Round</button>
@@ -570,6 +576,11 @@ function isPlausible(w){
   return true;
 }
 
+// Specific decoy strings to exclude even if the generator would otherwise
+// produce them (e.g. they read too oddly, or are near-homophones/abbreviations
+// that cause confusion rather than useful practice).
+const DECOY_BLOCKLIST = new Set(["YY","YV","TS","CI","UU","IQ","YB","YX","VY","YT"]);
+
 function generateDecoys(validSet, length){
   const decoys = new Set();
   for(const word of validSet){
@@ -591,6 +602,7 @@ function generateDecoys(validSet, length){
       if(rev !== word && !validSet.has(rev)) decoys.add(rev);
     }
   }
+  DECOY_BLOCKLIST.forEach(w => decoys.delete(w));
   return Array.from(decoys);
 }
 
@@ -608,7 +620,7 @@ function getDecoys(dict, len){
    and revisited from the same browser/device. It's per
    -device, not synced across phones/computers.
 ===================================================== */
-let progress = { rounds: 0, totalAccuracySum: 0, wordStats: {}, infiniteHighScores: {} }; // wordStats[word] = {wrong, right}; infiniteHighScores["DICT_LEN"] = best score
+let progress = { rounds: 0, totalAccuracySum: 0, wordStats: {}, infiniteHighScores: {}, bestStreaks: {} }; // wordStats[word] = {wrong, right}; infiniteHighScores["DICT_LEN"] = best score; bestStreaks["DICT_LEN"] = best streak
 const STORAGE_KEY = 'scrabble_trainer_progress';
 
 function loadProgress(){
@@ -617,6 +629,7 @@ function loadProgress(){
     if(raw){ progress = JSON.parse(raw); }
   }catch(e){ /* localStorage unavailable or no saved progress yet */ }
   if(!progress.infiniteHighScores) progress.infiniteHighScores = {};
+  if(!progress.bestStreaks) progress.bestStreaks = {};
   renderLifetimeStats();
   updateInfiniteBestNote();
   renderMissedWordsTab();
@@ -669,11 +682,17 @@ function updateInfiniteBestNote(){
   const note = document.getElementById('infiniteBestNote');
   const dict = getSelected('dict');
   const lenMode = getSelected('len');
-  const best = progress.infiniteHighScores[highScoreKey(dict, lenMode)] || 0;
+  const key = highScoreKey(dict, lenMode);
+  const best = progress.infiniteHighScores[key] || 0;
+  const bestStreak = progress.bestStreaks[key] || 0;
   const lenLabel = lenMode==='both' ? '2 & 3-letter' : lenMode+'-letter';
   note.innerHTML = `<span class="bsc-icon">🏆</span>
     <span class="bsc-num">${best}</span>
-    <span class="bsc-label">Best score<small>${dict} · ${lenLabel}</small></span>`;
+    <span class="bsc-label">Best score<small>${dict} · ${lenLabel}</small></span>
+    <span class="bsc-divider"></span>
+    <span class="bsc-icon">🔥</span>
+    <span class="bsc-num">${bestStreak}</span>
+    <span class="bsc-label">Best streak<small>${dict} · ${lenLabel}</small></span>`;
 }
 ['dict','len'].forEach(g=>{
   document.querySelectorAll(`[data-group="${g}"]`).forEach(b=>b.addEventListener('click', updateInfiniteBestNote));
@@ -753,7 +772,11 @@ function startRound(size, dict, lenMode, presetWords, fullCoverage, infinite){
     totalAnswers: 0,
     current: null,
     awaitingNext: false,
-    advanceTimer: null
+    advanceTimer: null,
+    // If this round was started from a fixed preset word list (e.g. practicing
+    // missed words), remember it so "Practice These Again" can replay the full
+    // original set rather than just whatever was still wrong at round's end.
+    originalPreset: presetWords ? presetWords.map(w=>({...w})) : null
   };
   showScreen('screen-playing');
   document.getElementById('dictBadge').textContent = dict;
@@ -764,6 +787,7 @@ function startRound(size, dict, lenMode, presetWords, fullCoverage, infinite){
   document.getElementById('playedCount').textContent = '0';
   document.getElementById('progressWrap').style.display = infinite ? 'none' : 'block';
   document.getElementById('livesCell').style.display = infinite ? 'block' : 'none';
+  document.getElementById('bestStreakDisplay').textContent = progress.bestStreaks[highScoreKey(dict, lenMode)] || 0;
   if(infinite){
     renderLives();
     document.getElementById('highScoreDisplay').textContent = progress.infiniteHighScores[highScoreKey(dict, lenMode)] || 0;
@@ -798,6 +822,7 @@ function updateProgressUI(){
   document.getElementById('liveScore').textContent = game.correctFirstTry;
   document.getElementById('liveAttempted').textContent = game.totalAnswers;
   document.getElementById('streakCount').textContent = game.streak;
+  document.getElementById('bestStreakDisplay').textContent = progress.bestStreaks[highScoreKey(game.dict, game.lenMode)] || 0;
   if(game.infinite){
     document.getElementById('progressLabel').textContent = '∞';
     renderLives();
@@ -885,6 +910,11 @@ function answer(userSaysValid){
     updateWordStat(q.word, true);
     if(game.infinite) game.score++;
     game.streak++;
+    const streakKey = highScoreKey(game.dict, game.lenMode);
+    if(game.streak > (progress.bestStreaks[streakKey] || 0)){
+      progress.bestStreaks[streakKey] = game.streak;
+      saveProgress();
+    }
   } else {
     q.everMissed = true;
     game.missed[q.word] = { isValid: q.isValid, count: (game.missed[q.word]?.count||0)+1 };
@@ -918,7 +948,7 @@ function answer(userSaysValid){
     }
   }
 
-  logPlayedWord(q.word, q.isValid, correct);
+  logPlayedWord(q.word, q.isValid, correct, userSaysValid);
   updateProgressUI();
 
   // Auto-advance quickly; tapping the banner skips the wait. Nothing else on
@@ -926,8 +956,8 @@ function answer(userSaysValid){
   game.advanceTimer = setTimeout(advanceNow, correct ? 300 : 550);
 }
 
-function logPlayedWord(word, isValid, wasCorrect){
-  game.log.push({word, isValid, wasCorrect});
+function logPlayedWord(word, isValid, wasCorrect, userGuess){
+  game.log.push({word, isValid, wasCorrect, userGuess});
   document.getElementById('playedCount').textContent = game.log.length;
   renderPlayedColumns();
 }
@@ -992,10 +1022,11 @@ function renderColumnLog(log, colIds, emptyMsgId){
   newestFirst.forEach((e, i)=>{
     const block = Math.floor(i / rowsPerCol);
     const target = buckets[block % cols.length];
+    const guessedValid = (e.userGuess !== undefined) ? e.userGuess : (e.wasCorrect ? e.isValid : !e.isValid);
     target.push(`<div class="played-row">
       <span class="pw ${e.isValid?'pw-valid':'pw-invalid'}">${e.word}</span>
       <span class="pw-badges">
-        <span class="pw-badge ${e.isValid?'valid':'invalid'}">${e.isValid?'Word':'Not'}</span>
+        <span class="pw-badge ${guessedValid?'valid':'invalid'}">${guessedValid?'Word':'Not'}</span>
         <span class="pw-icon ${e.wasCorrect?'correct':'wrong'}">${e.wasCorrect?'✓':'✕'}</span>
       </span>
     </div>`);
@@ -1048,8 +1079,11 @@ function finishRound(){
     } else {
       lostSection.style.display = 'none';
     }
+    // Redundant with the lives-lost breakdown above in infinite mode, so hide it here
+    document.getElementById('missedWordsSection').style.display = 'none';
   } else {
     document.getElementById('livesLostSection').style.display = 'none';
+    document.getElementById('missedWordsSection').style.display = 'block';
     progress.rounds++;
     const acc = Math.round(100*game.correctFirstTry/game.total);
     progress.totalAccuracySum += acc;
@@ -1122,6 +1156,12 @@ document.getElementById('quitLink').addEventListener('click', ()=>{
   else { showScreen('screen-setup'); }
 });
 document.getElementById('practiceMissedBtn').addEventListener('click', ()=>{
+  if(game.originalPreset && game.originalPreset.length > 0){
+    // This round itself was a fixed practice set (e.g. from the Missed tab) —
+    // replay the exact same full list again, not just this round's leftovers.
+    startRound(game.originalPreset.length, game.dict, game.lenMode, shuffle(game.originalPreset.map(w=>({...w}))));
+    return;
+  }
   const missedWords = Object.keys(game.missed);
   if(missedWords.length===0){ showScreen('screen-setup'); return; }
   const preset = missedWords.map(w=>({word:w, isValid:game.missed[w].isValid, len:w.length}));
@@ -1470,15 +1510,38 @@ function renderMissedWordsTab(){
   }).join('');
 }
 
+let resetArmed = false;
+let resetArmTimer = null;
 document.getElementById('resetMissedBtn').addEventListener('click', ()=>{
   const missedCount = Object.keys(progress.wordStats).filter(w=>progress.wordStats[w].wrong>0).length;
   if(missedCount === 0) return;
-  const ok = confirm(`Reset your cumulative miss tally for ${missedCount} word${missedCount===1?'':'s'}? This clears your local miss/right history — it can't be undone.`);
-  if(!ok) return;
+  const btn = document.getElementById('resetMissedBtn');
+
+  if(!resetArmed){
+    // First tap: arm it and ask for a second tap, rather than relying on
+    // window.confirm — that native dialog can be silently blocked inside
+    // sandboxed preview iframes, making the button look like it does nothing.
+    resetArmed = true;
+    btn.textContent = `Tap again to confirm (${missedCount} word${missedCount===1?'':'s'})`;
+    btn.classList.add('confirming');
+    if(resetArmTimer) clearTimeout(resetArmTimer);
+    resetArmTimer = setTimeout(()=>{
+      resetArmed = false;
+      btn.textContent = 'Reset Miss Tally';
+      btn.classList.remove('confirming');
+    }, 4000);
+    return;
+  }
+
+  // Second tap within the window: actually reset
+  clearTimeout(resetArmTimer);
+  resetArmed = false;
   progress.wordStats = {};
   saveProgress();
   renderLifetimeStats();
   renderMissedWordsTab();
+  btn.textContent = 'Reset Miss Tally';
+  btn.classList.remove('confirming');
 });
 
 document.getElementById('practiceMissedFromTabBtn').addEventListener('click', ()=>{
