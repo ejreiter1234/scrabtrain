@@ -1,4 +1,4 @@
-<!-- v1.24 | Last updated: 2026-07-04 -->
+<!-- v1.28 | Last updated: 2026-07-04 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -190,6 +190,22 @@ nav.tabs button.active{background:var(--tile);color:var(--board-dark);}
 .badge.invalid{background:rgba(192,83,62,0.25);color:#f0a08c;}
 .miss-item .tries{font-size:11px;color:var(--muted);margin-left:8px;}
 
+.pyramid-legend{display:flex;justify-content:space-between;padding:0 4px;margin-bottom:6px;font-size:11px;font-weight:700;}
+.pyr-legend-label.valid{color:#8fe0ae;}
+.pyr-legend-label.invalid{color:#f0a08c;}
+
+.pyramid-chart{padding:8px 0;}
+.pyr-row-single{display:flex;align-items:center;min-height:24px;padding:1px 4px;}
+.pyr-half{flex:1;min-width:0;display:flex;align-items:center;gap:6px;}
+.pyr-half-left{justify-content:flex-end;}
+.pyr-half-right{justify-content:flex-start;}
+.pyr-word{font-family:Georgia,serif;font-weight:700;font-size:13px;letter-spacing:0.5px;white-space:nowrap;flex:none;}
+.pyr-count{font-size:10px;color:var(--muted);flex:none;min-width:14px;text-align:center;}
+.pyr-bar{height:12px;border-radius:3px;flex:none;min-width:3px;}
+.pyr-bar.valid{background:#3f8f5f;}
+.pyr-bar.invalid{background:#c0533e;}
+.pyramid-empty{text-align:center;color:var(--muted);font-size:13px;padding:24px 10px;}
+
 .life-lost-item{display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid rgba(255,255,255,0.06);}
 .life-lost-item:last-child{border-bottom:none;}
 .life-lost-item .heart-num{font-size:18px;flex:none;}
@@ -298,7 +314,7 @@ nav.tabs button.active{background:var(--tile);color:var(--board-dark);}
         <button class="big-btn secondary" id="reviewMissedBtn" style="margin-top:14px;display:none;">Review My Missed Words</button>
       </div>
 
-      <div class="app-version">v1.24</div>
+      <div class="app-version">v1.28</div>
 
     </div>
 
@@ -463,10 +479,15 @@ nav.tabs button.active{background:var(--tile);color:var(--board-dark);}
         <div class="opt-btn selected" data-group="msdict" data-val="SOWPODS">SOWPODS</div>
       </div>
       <button class="big-btn" id="practiceMissedFromTabBtn">Practice My Missed Words</button>
-      <p class="small-note">A running local record of every word you've ever gotten wrong, with how many times you've missed it and gotten it right since. Sorted worst-first. Stored on this device only.</p>
+      <button class="big-btn secondary" id="resetMissedBtn" style="margin-top:8px;">Reset Miss Tally</button>
+      <p class="small-note">A running local record of every word you've ever gotten wrong. Valid words on the left, invalid on the right, bar length shows how often you've missed each. Stored on this device only.</p>
     </div>
     <div class="wl-count" id="missedTabCount"></div>
-    <div class="card" id="missedTabList" style="padding:6px 10px;"></div>
+    <div class="pyramid-legend">
+      <span class="pyr-legend-label valid">✓ Valid words</span>
+      <span class="pyr-legend-label invalid">Invalid words ✕</span>
+    </div>
+    <div class="card pyramid-chart" id="missedTabList"></div>
   </div>
 
 </div>
@@ -1411,30 +1432,54 @@ document.getElementById('anagramInput').addEventListener('keydown', e=>{ if(e.ke
 ===================================================== */
 function renderMissedWordsTab(){
   const dict = getSelected('msdict');
-  const list = document.getElementById('missedTabList');
+  const chart = document.getElementById('missedTabList');
   const countEl = document.getElementById('missedTabCount');
 
   const missedWords = Object.keys(progress.wordStats)
-    .filter(w => progress.wordStats[w].wrong > 0)
-    .sort((a,b) => progress.wordStats[b].wrong - progress.wordStats[a].wrong);
+    .filter(w => progress.wordStats[w].wrong > 0);
 
-  countEl.textContent = `${missedWords.length} word${missedWords.length===1?'':'s'} missed at least once`;
+  countEl.textContent = `${missedWords.length} word${missedWords.length===1?'':'s'} missed at least once` + (missedWords.length>20 ? ' (showing top 20)' : '');
 
   if(missedWords.length === 0){
-    list.innerHTML = '<div style="text-align:center;color:var(--muted);padding:20px;">No missed words yet — nice! Play a round and anything you miss will show up here.</div>';
+    chart.innerHTML = '<div class="pyramid-empty">No missed words yet — nice! Play a round and anything you miss will show up here.</div>';
     return;
   }
 
-  list.innerHTML = missedWords.map(w=>{
-    const stat = progress.wordStats[w];
+  const entries = missedWords.map(w=>{
     const isValid = DICT[dict][w.length] ? DICT[dict][w.length].has(w) : DICT.TWL[w.length].has(w);
-    return `<div class="miss-item">
-      <span class="w">${w}</span>
-      <span><span class="badge ${isValid?'valid':'invalid'}">${isValid?'VALID':'NOT VALID'}</span>
-      <span class="tries">missed ${stat.wrong}x · got it right ${stat.right}x</span></span>
+    return { word: w, count: progress.wordStats[w].wrong, isValid };
+  });
+  entries.sort((a,b)=>b.count-a.count);
+  const topEntries = entries.slice(0, 20);
+
+  const maxCount = Math.max(1, ...entries.map(e=>e.count));
+  const barMaxPx = 90;
+
+  chart.innerHTML = topEntries.map(e=>{
+    const barWidth = Math.round((e.count/maxCount)*barMaxPx);
+    const leftHalf = e.isValid
+      ? `<span class="pyr-word">${e.word}</span><span class="pyr-count">${e.count}</span><span class="pyr-bar valid" style="width:${barWidth}px"></span>`
+      : '';
+    const rightHalf = !e.isValid
+      ? `<span class="pyr-bar invalid" style="width:${barWidth}px"></span><span class="pyr-count">${e.count}</span><span class="pyr-word">${e.word}</span>`
+      : '';
+    return `<div class="pyr-row-single">
+      <div class="pyr-half pyr-half-left">${leftHalf}</div>
+      <div class="pyr-half pyr-half-right">${rightHalf}</div>
     </div>`;
   }).join('');
 }
+
+document.getElementById('resetMissedBtn').addEventListener('click', ()=>{
+  const missedCount = Object.keys(progress.wordStats).filter(w=>progress.wordStats[w].wrong>0).length;
+  if(missedCount === 0) return;
+  const ok = confirm(`Reset your cumulative miss tally for ${missedCount} word${missedCount===1?'':'s'}? This clears your local miss/right history — it can't be undone.`);
+  if(!ok) return;
+  progress.wordStats = {};
+  saveProgress();
+  renderLifetimeStats();
+  renderMissedWordsTab();
+});
 
 document.getElementById('practiceMissedFromTabBtn').addEventListener('click', ()=>{
   const dict = getSelected('msdict');
