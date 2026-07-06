@@ -1,4 +1,4 @@
-<!-- v1.34 | Last updated: 2026-07-04 -->
+<!-- v1.36 | Last updated: 2026-07-04 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -277,7 +277,7 @@ nav.tabs button.active{background:var(--tile);color:var(--board-dark);}
 <div class="app">
   <header class="top">
     <h1>🀫 Eric's Scrabble 2/3 Letter Word Trainer</h1>
-    <div class="sub">2s &amp; 3s word validity practice <span class="header-version" id="headerVersion">v1.34</span></div>
+    <div class="sub">2s &amp; 3s word validity practice <span class="header-version" id="headerVersion">v1.36</span></div>
   </header>
 
   <nav class="tabs">
@@ -579,7 +579,7 @@ function isPlausible(w){
 // Specific decoy strings to exclude even if the generator would otherwise
 // produce them (e.g. they read too oddly, or are near-homophones/abbreviations
 // that cause confusion rather than useful practice).
-const DECOY_BLOCKLIST = new Set(["YY","YV","TS","CI","UU","IQ","YB","YX","VY","YT"]);
+const DECOY_BLOCKLIST = new Set(["YY","YV","TS","CI","UU","IQ","YB","YX","VY","YT","YQ","HC","AQ","YP","CY","QO","YJ","UC","JY","YD","SY","MH","YM","HS","YF","YH","RY","YR","YL","YC","OQ","YN","YS","YG","YZ"]);
 
 function generateDecoys(validSet, length){
   const decoys = new Set();
