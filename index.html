@@ -1,4 +1,4 @@
-<!-- v1.36 | Last updated: 2026-07-04 -->
+<!-- v1.37 | Last updated: 2026-07-06 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -217,6 +217,8 @@ nav.tabs button.active{background:var(--tile);color:var(--board-dark);}
 .life-lost-item:last-child{border-bottom:none;}
 .life-lost-item .heart-num{font-size:13px;flex:none;}
 .life-lost-item .llw{font-family:Georgia,serif;font-weight:700;font-size:13px;letter-spacing:0.5px;flex:none;min-width:30px;}
+.life-lost-item .llw-valid{color:#8fe0ae;}
+.life-lost-item .llw-invalid{color:#f0a08c;}
 .life-lost-item .lld{font-size:10.5px;color:var(--muted);}
 
 /* Word list browser */
@@ -277,7 +279,7 @@ nav.tabs button.active{background:var(--tile);color:var(--board-dark);}
 <div class="app">
   <header class="top">
     <h1>🀫 Eric's Scrabble 2/3 Letter Word Trainer</h1>
-    <div class="sub">2s &amp; 3s word validity practice <span class="header-version" id="headerVersion">v1.36</span></div>
+    <div class="sub">2s &amp; 3s word validity practice <span class="header-version" id="headerVersion">v1.37</span></div>
   </header>
 
   <nav class="tabs">
@@ -1071,8 +1073,8 @@ function finishRound(){
       lostList.innerHTML = game.livesLostLog.map(l=>{
         const verdict = l.isValid ? `${l.word} IS a word — you said not a word` : `${l.word} is NOT a word — you said word`;
         return `<div class="life-lost-item">
-          <span class="heart-num">💔 #${l.order}</span>
-          <span class="llw">${l.word}</span>
+          <span class="heart-num">💔</span>
+          <span class="llw ${l.isValid?'llw-valid':'llw-invalid'}">${l.word}</span>
           <span class="lld">${verdict}</span>
         </div>`;
       }).join('');
